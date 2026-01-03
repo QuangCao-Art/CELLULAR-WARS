@@ -86,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastAnnouncedPhase = ''; // To track phase changes for animation
     let pelliclePool = 0;
     let turnNumber = 1;
+    let isAITurn = false; // Tracks if the AI is currently moving
 
     // Drag State (GLOBAL FLAGS - EXTREMELY ROBUST)
     let draggedIndex = null;
@@ -164,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // DRAG EVENTS
             token.addEventListener('dragstart', (e) => {
-                if (currentPhase !== 'REINFORCE') {
+                if (currentPhase !== 'REINFORCE' || isAITurn) {
                     e.preventDefault();
                     return;
                 }
@@ -234,8 +235,109 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function endTurn() {
-        turnNumber++;
-        startReinforcePhase();
+        if (!isAITurn) {
+            // Player ended turn -> AI Turn
+            isAITurn = true;
+            runAITurn();
+        } else {
+            // AI ended turn -> Player Turn (Next Turn Number)
+            isAITurn = false;
+            turnNumber++;
+            startReinforcePhase();
+        }
+    }
+
+    // --- AI LOGIC ---
+    async function runAITurn() {
+        // AI orchestrator with delays for "thinking" feel
+        currentPhase = 'REINFORCE';
+        updatePhaseUI();
+        updateTurnIndicator();
+
+        await new Promise(r => setTimeout(r, 1500));
+        runAIReinforce();
+
+        await new Promise(r => setTimeout(r, 1500));
+        currentPhase = 'ACTION';
+        updatePhaseUI();
+
+        await new Promise(r => setTimeout(r, 1500));
+        runAIAction();
+    }
+
+    function runAIReinforce() {
+        // AI simple reinforcement logic: Give to Vanguard if low, else random
+        let availablePP = REINFORCE_AMOUNT;
+        const livingEnemies = enemyTeam.filter(m => !m.isDead);
+
+        if (livingEnemies.length === 0) return;
+
+        while (availablePP > 0) {
+            // Priority: Vanguard (index 0) if has less than 3 Pellicles
+            let target;
+            const vanguard = enemyTeam[0];
+            if (!vanguard.isDead && vanguard.pellicle < 3) {
+                target = vanguard;
+            } else {
+                target = livingEnemies[Math.floor(Math.random() * livingEnemies.length)];
+            }
+
+            if (target.pellicle < target.max) {
+                const gain = target.id.includes('cano') ? 2 : 1;
+                target.pellicle += gain;
+                updateBattleLog(`AI: ${target.name} absorbs Pellicle`);
+                triggerVisualEffect(enemyTeam.indexOf(target), false, 'power-up');
+                availablePP--;
+            } else {
+                // If everyone's full or randomized into a full one, break to avoid infinite loop
+                break;
+            }
+        }
+        renderEnemyFormation();
+    }
+
+    function runAIAction() {
+        // AI simple action logic: Attack player Vanguard if alive
+        const livingAI = enemyTeam.filter(m => !m.isDead && m.pellicle > 0);
+        if (livingAI.length === 0) {
+            setTimeout(() => endTurn(), 1000);
+            return;
+        }
+
+        // Pick an attacker (Prefer one with most Pellicles)
+        const attacker = livingAI.sort((a, b) => b.pellicle - a.pellicle)[0];
+        const attackerIdx = enemyTeam.indexOf(attacker);
+
+        // Pick a victim (Prefer player Vanguard)
+        const livingPlayer = playerTeam.filter(m => !m.isDead);
+        if (livingPlayer.length === 0) {
+            setTimeout(() => endTurn(), 1000);
+            return;
+        }
+
+        let victimIdx = 0; // Vanguard
+        if (playerTeam[0].isDead) {
+            const wings = livingPlayer.map(m => playerTeam.indexOf(m));
+            victimIdx = wings[Math.floor(Math.random() * wings.length)];
+        }
+
+        // Action Cost (Keep it simple: standard attack for AI)
+        const cost = (attacker.id.includes('nitro') || attacker.id.includes('lydro')) ? 2 : 1;
+
+        if (attacker.pellicle >= cost) {
+            attacker.pellicle -= cost;
+            renderEnemyFormation();
+
+            triggerProjectile(attackerIdx, victimIdx, false, () => {
+                updateBattleLog(`AI: ${attacker.name} attacks ${playerTeam[victimIdx].name}!`);
+                resolveHit(playerTeam[victimIdx], victimIdx, playerTeam, attacker, attackerIdx, enemyTeam);
+                renderFormation();
+                setTimeout(() => endTurn(), 1000);
+            });
+        } else {
+            // Cannot afford attack
+            setTimeout(() => endTurn(), 1000);
+        }
     }
 
     function addPellicleFromDrag(index, tokenId) {
@@ -391,9 +493,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // A. PELLICLE SOURCE (REINFORCE)
     // A. PELLICLE SOURCE (REINFORCE) - DEPRECATED
     // Dynamic tokens are now used instead of a static source.
-    // bindPellicleSource removed.
-
+    // 4. DRAG & DROP HANDLERS
     function handleDragStartMonster(e, index) {
+        if (isAITurn) {
+            e.preventDefault();
+            return;
+        }
+
         const monster = playerTeam[index];
 
         // CUSTOM: Lydrosome Osmotic Flow (Transfer PP from Lydrosome during Reinforce)
@@ -450,20 +556,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // C. GENERIC DROP HANDLERS
     function handleDragOver(e) {
+        if (isAITurn) return;
         e.preventDefault();
         e.dataTransfer.dropEffect = 'copyMove';
     }
     function handleDragEnter(e) {
+        if (isAITurn) return;
         e.preventDefault();
         e.currentTarget.classList.add('drag-over');
     }
-    function handleDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+    function handleDragLeave(e) {
+        if (isAITurn) return;
+        e.currentTarget.classList.remove('drag-over');
+    }
 
     // DROP ON PLAYER SLOT
     function handleDropPlayerSlot(e, targetIndex) {
-        e.stopPropagation();
         e.preventDefault();
-        document.querySelectorAll('.slot').forEach(s => s.classList.remove('drag-over'));
+        e.currentTarget.classList.remove('drag-over');
+
+        if (isAITurn) return;
 
         // 1. Check DataTransfer FIRST to get Token ID
         const rawData = e.dataTransfer.getData('text/plain');
@@ -490,7 +602,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (rawData.includes('type:transfer')) {
             const sourceIndex = parseInt(rawData.split('index:')[1]);
-            const targetIndex = parseInt(rawData.split('index:')[1]); // Wait, targetIndex is argument
             // const targetIndex is provided by handleDropPlayerSlot arg
 
             if (!isNaN(sourceIndex) && sourceIndex !== targetIndex) {
@@ -546,6 +657,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleDropEnemySlot(e, enemyIndex) {
         e.preventDefault();
         e.currentTarget.classList.remove('target-lock');
+
+        if (isAITurn) return;
 
         // IF REINFORCE PHASE
         if (currentPhase === 'REINFORCE') {
@@ -772,23 +885,23 @@ document.addEventListener('DOMContentLoaded', () => {
             phaseMsg.classList.add('phase-announce');
 
             if (currentPhase === 'REINFORCE') {
-                phaseMsg.innerText = "REINFORCE PHASE";
+                phaseMsg.innerText = isAITurn ? "AI REINFORCING" : "REINFORCE PHASE";
                 phaseMsg.style.color = "var(--neon-green)";
                 phaseMsg.style.textShadow = "0 0 10px var(--neon-green), 0 0 20px var(--neon-green)";
-                phaseSubMsg.innerText = "DRAG PELLICLE TO REINFORCE";
+                phaseSubMsg.innerText = isAITurn ? "COMPUTER IS PREPARING..." : "DRAG PELLICLE TO REINFORCE";
                 if (reinforceZone) reinforceZone.classList.remove('disabled');
             } else {
                 // ACTION PHASE
-                if (turnNumber === 1) {
+                if (turnNumber === 1 && !isAITurn) {
                     phaseMsg.innerText = "ACCLIMATIZATION";
                     phaseMsg.style.color = "var(--neon-blue)"; // Blue for calm/statuesque
                     phaseMsg.style.textShadow = "0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue)";
                     phaseSubMsg.innerText = "CANNOT ATTACK OR SWAP IN TURN 1";
                 } else {
-                    phaseMsg.innerText = "ATTACK PHASE";
+                    phaseMsg.innerText = isAITurn ? "AI ATTACKING" : "ATTACK PHASE";
                     phaseMsg.style.color = "var(--neon-red)";
                     phaseMsg.style.textShadow = "0 0 10px var(--neon-red), 0 0 20px var(--neon-red)";
-                    phaseSubMsg.innerText = "ATTACK OR MOVE";
+                    phaseSubMsg.innerText = isAITurn ? "BRACE YOURSELF!" : "ATTACK OR MOVE";
                 }
                 if (reinforceZone) reinforceZone.classList.add('disabled');
             }
@@ -807,7 +920,15 @@ document.addEventListener('DOMContentLoaded', () => {
             turnText = turnNumber + "TH"; // Simple fallback
         }
 
-        turnCounter.innerText = `${turnText} CELL DIVISION`;
+        if (isAITurn) {
+            turnCounter.innerText = `ENEMY'S DIVISION`;
+            turnCounter.style.color = "var(--neon-red)";
+            turnCounter.style.textShadow = "0 0 10px var(--neon-red)";
+        } else {
+            turnCounter.innerText = `${turnText} CELL DIVISION`;
+            turnCounter.style.color = "var(--neon-blue)";
+            turnCounter.style.textShadow = "0 0 10px var(--neon-blue)";
+        }
     }
 
     function bindSlotDropZones() {
@@ -907,7 +1028,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleMonsterClick(index) {
         // Only valid for Player Team interaction
-        if (currentPhase !== 'REINFORCE') return;
+        if (currentPhase !== 'REINFORCE' || isAITurn) return;
 
         const clickedMonster = playerTeam[index];
         if (clickedMonster.isDead) return;
