@@ -602,16 +602,25 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 0px;
-    /* Reduced gap */
+    pointer-events: auto;
+    /* Allow button clicks */
 }
 
-.vs-logo {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 0.8rem;
-    /* Small as requested */
-    color: rgba(255, 255, 255, 0.5);
-    letter-spacing: 4px;
-    font-weight: 300;
+#end-turn-btn {
+    position: absolute;
+    bottom: 60px;
+    /* Above battle log */
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 30px;
+    font-size: 0.9rem;
+    border-width: 1px;
+    pointer-events: auto;
+    z-index: 1000;
+}
+
+#end-turn-btn:hover {
+    box-shadow: 0 0 20px var(--neon-blue);
 }
 
 .phase-display {

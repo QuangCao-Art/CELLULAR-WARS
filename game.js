@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const poolCounter = document.querySelector('.pool-counter');
     const phaseMsg = document.getElementById('phase-msg');
     const phaseSubMsg = document.getElementById('phase-sub-msg');
+    const endTurnBtn = document.getElementById('end-turn-btn');
 
     // Tooltip Elements
     const tooltip = document.getElementById('ability-tooltip');
@@ -111,6 +112,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function initGame() {
         console.log("Initializing Game State...");
         if (rotateBtn) rotateBtn.style.display = 'none';
+
+        if (endTurnBtn) {
+            endTurnBtn.addEventListener('click', () => {
+                updateBattleLog("PLAYER ENDS TURN MANUALLY");
+                endTurn();
+            });
+        }
 
         updateUI();
         bindSlotDropZones();
@@ -890,6 +898,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 phaseMsg.style.textShadow = "0 0 10px var(--neon-green), 0 0 20px var(--neon-green)";
                 phaseSubMsg.innerText = isAITurn ? "COMPUTER IS PREPARING..." : "DRAG PELLICLE TO REINFORCE";
                 if (reinforceZone) reinforceZone.classList.remove('disabled');
+                if (endTurnBtn) endTurnBtn.classList.add('hidden');
             } else {
                 // ACTION PHASE
                 if (turnNumber === 1 && !isAITurn) {
@@ -903,7 +912,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     phaseMsg.style.textShadow = "0 0 10px var(--neon-red), 0 0 20px var(--neon-red)";
                     phaseSubMsg.innerText = isAITurn ? "BRACE YOURSELF!" : "ATTACK OR MOVE";
                 }
+
                 if (reinforceZone) reinforceZone.classList.add('disabled');
+
+                // Show manual end turn button only during Player Action phase
+                if (endTurnBtn) {
+                    if (!isAITurn) endTurnBtn.classList.remove('hidden');
+                    else endTurnBtn.classList.add('hidden');
+                }
             }
         }
     }
