@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CELLULAR WARS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="game-container">
+        <!-- Main Menu Screen -->
+        <div id="main-menu" class="screen active">
+            <h1 class="game-title">CELLULAR <span class="neon-text">WARS</span></h1>
+            <div class="menu-options">
+                <button id="btn-start" class="btn-neon">START BATTLE</button>
+                <button id="btn-collection" class="btn-neon">DATABASE</button>
+            </div>
+            <div class="version">Prototype v0.1</div>
+        </div>
+
+        <!-- Game Board Screen (Hidden by default) -->
+        <div id="game-board" class="screen hidden">
+
+            <div class="battlefield">
+                <!-- Enemy Triangle (Top) -->
+                <div class="team-formation enemy-team">
+                    <div class="triangle-row back-row">
+                        <div class="slot wing" data-pos="wing-left"></div>
+                        <div class="slot wing" data-pos="wing-right"></div>
+                    </div>
+                    <div class="triangle-row front-row">
+                        <div class="slot vanguard" data-pos="vanguard"></div>
+                    </div>
+                </div>
+
+                <!-- Center Area -->
+                <div class="center-zone">
+                    <div class="vs-container">
+                        <div class="turn-counter">FIRST CELL DIVISION</div>
+                        <div class="phase-display" id="phase-msg">REINFORCE PHASE</div>
+                        <div class="phase-sub-text" id="phase-sub-msg">DRAG PELLICLE TO REINFORCE</div>
+                    </div>
+                </div>
+
+                <!-- Player Triangle (Bottom) -->
+                <div class="team-formation player-team">
+                    <div class="triangle-row front-row">
+                        <div class="slot vanguard" data-pos="vanguard">
+                            <!-- Placeholder for Nitrophil -->
+                            <div class="monster nitrophil">
+                                <div class="pellicle-ring layer-1"></div>
+                                <img src="Images/Nitrophil.png" alt="Nitrophil">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="triangle-row back-row">
+                        <div class="slot wing" data-pos="wing-left">
+                            <!-- Placeholder for Lydrosome -->
+                            <div class="monster lydrosome">
+                                <div class="pellicle-ring layer-1"></div>
+                                <img src="Images/Lydrosome.png" alt="Lydrosome">
+                            </div>
+                        </div>
+                        <div class="slot wing" data-pos="wing-right">
+                            <!-- Placeholder for Canobolus -->
+                            <div class="monster canobolus">
+                                <div class="pellicle-ring layer-1"></div>
+                                <img src="Images/Canobolus.png" alt="Canobolus">
+                            </div>
+                        </div>
+                    </div>
+                    <div id="battle-log">WAITING FOR ACTION...</div>
+                </div>
+
+                <!-- Ability Tooltip -->
+                <!-- HIDDEN ELEMENTS FOR DRAG -->
+                <img id="drag-attack-icon" src="Images/Swap.png"
+                    style="position: absolute; top: -1000px; width: 40px; height: 40px; pointer-events: none;">
+
+                <div id="ability-tooltip" class="tooltip hidden">
+                    <h3 id="tooltip-name">Monster Name</h3>
+                    <div class="tooltip-section">
+                        <span class="tooltip-label">ATTACK ABILITY:</span>
+                        <span id="tooltip-attack">Ability Description</span>
+                    </div>
+                    <div class="tooltip-section">
+                        <span class="tooltip-label">PELLICLE ABILITY:</span>
+                        <span id="tooltip-passive">Passive Description</span>
+                    </div>
+                </div>
+            </div>
+            <script src="game.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,826 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap');
+
+:root {
+    --bg-color: #050a14;
+    --neon-blue: #00f3ff;
+    --neon-green: #0aff00;
+    --neon-red: #ff0055;
+    --glass-panel: rgba(255, 255, 255, 0.05);
+}
+
+* {
+    box-sizing: border-box;
+    user-select: none;
+    /* Prevent text selection */
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-color);
+    color: white;
+    font-family: 'Rajdhani', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#game-container {
+    width: 100%;
+    max-width: 600px;
+    /* Mobile-first approach */
+    height: 100vh;
+    background: radial-gradient(circle at center, #1a253a 0%, #050a14 100%);
+    position: relative;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+}
+
+/* UTILITIES */
+.hidden {
+    display: none !important;
+}
+
+.screen {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* MAIN MENU */
+#main-menu {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.game-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 3rem;
+    color: white;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    margin-bottom: 50px;
+}
+
+.neon-text {
+    color: var(--neon-green);
+    text-shadow: 0 0 20px var(--neon-green);
+}
+
+.menu-options {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.btn-neon {
+    background: transparent;
+    border: 2px solid var(--neon-blue);
+    color: var(--neon-blue);
+    padding: 15px 40px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: 0 0 10px var(--neon-blue), inset 0 0 10px var(--neon-blue);
+    transition: all 0.3s;
+    text-transform: uppercase;
+}
+
+.btn-neon:hover {
+    background: var(--neon-blue);
+    color: #000;
+    box-shadow: 0 0 30px var(--neon-blue);
+}
+
+/* GAME BOARD */
+#game-board {
+    display: flex;
+    flex-direction: column;
+}
+
+.turn-counter {
+    font-family: 'Orbitron', sans-serif;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.battlefield {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    perspective: 1000px;
+}
+
+/* PELLICLE TOKEN ANIMATIONS */
+@keyframes pel-spawn {
+    0% {
+        opacity: 0;
+        transform: translateY(-100vh) scale(0.5);
+        /* Start off-screen */
+    }
+
+    80% {
+        opacity: 1;
+        transform: translateY(10px) scale(1.1);
+        /* Bounce */
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes pel-float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.team-formation {
+    display: flex;
+    flex-direction: column;
+    /* Rows stacked vertically */
+    align-items: center;
+    gap: 23px;
+    /* 20px * 1.15 */
+    padding: 20px;
+    transition: transform 0.5s ease;
+    position: relative;
+    /* Anchor for absolute pellicles */
+}
+
+.pellicle-token {
+    position: absolute;
+    width: 70px;
+    height: 70px;
+    background-image: url('Images/PelliclePoint.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    cursor: grab;
+    z-index: 100;
+    transition: filter 0.2s;
+    /* Removed transform to avoid conflict with animation */
+    filter: drop-shadow(0 0 5px var(--neon-green));
+
+    /* Fly in then Float */
+    animation: pel-spawn 0.6s ease-out both,
+        pel-float 3s ease-in-out 0.6s infinite;
+}
+
+.pellicle-token:active {
+    cursor: grabbing;
+    /* Scale logic might conflict with animation, rely on filter or minimal transform */
+    filter: drop-shadow(0 0 15px var(--neon-green)) brightness(1.2);
+}
+
+.pellicle-token.consumed {
+    transform: scale(0);
+    opacity: 0;
+    transition: all 0.3s;
+}
+
+/* Correct Triangle Formation: Rows */
+.triangle-row {
+    display: flex;
+    justify-content: center;
+    gap: 46px;
+    /* 40px * 1.15 */
+    /* Space between Wings */
+}
+
+/* Slot Styling */
+.slot {
+    width: 106px;
+    /* 92px * 1.15 */
+    height: 106px;
+    aspect-ratio: 1 / 1;
+    border: none;
+    /* Removed dotted circle */
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    border: 3px solid transparent;
+    transition: all 0.3s;
+}
+
+/* Vanguard styling removed */
+
+/* MONSTER STYLING */
+.monster {
+    width: 120px;
+    /* Use fixed square size for reliability */
+    height: 120px;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.3s;
+    cursor: pointer;
+    z-index: 50;
+}
+
+.monster:hover:not(.dead) img {
+    filter: brightness(1.2) drop-shadow(0 0 15px var(--neon-blue));
+    transform: scale(1.05);
+}
+
+.monster:hover:not(.dead) {
+    /* Remove shadow from container, only transition transform */
+    transform: scale(1.05);
+}
+
+.monster.vulnerable {
+    /* Subtle red glow instead of full color shift */
+    animation: vulnerable-pulse 1s infinite alternate;
+}
+
+.monster.locked {
+    box-shadow: 0 0 20px 5px #00aaff, inset 0 0 10px #00aaff;
+    animation: locked-glow 1s infinite alternate;
+}
+
+@keyframes locked-glow {
+    from {
+        box-shadow: 0 0 10px 2px #00aaff;
+    }
+
+    to {
+        box-shadow: 0 0 25px 8px #00aaff;
+    }
+}
+
+.monster.ability-active {
+    animation: ability-pulse 0.8s infinite alternate;
+    box-shadow: 0 0 15px var(--neon-green), inset 0 0 10px var(--neon-green);
+    border: 2px solid var(--neon-green);
+}
+
+@keyframes ability-pulse {
+    from {
+        box-shadow: 0 0 10px var(--neon-green);
+        transform: scale(1);
+    }
+
+    to {
+        box-shadow: 0 0 25px var(--neon-green), 0 0 40px var(--neon-green);
+        transform: scale(1.05);
+    }
+}
+
+.death-x {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #666;
+    /* Grayscale X */
+    font-size: 80px;
+    font-weight: bold;
+    font-family: 'Orbitron', sans-serif;
+    text-shadow: 0 0 10px #333;
+    /* Darker shadow */
+    pointer-events: none;
+    z-index: 55;
+}
+
+.monster.exploding {
+    box-shadow: 0 0 50px var(--neon-red), 0 0 100px orange;
+    animation: explode-flash 0.4s infinite alternate;
+    z-index: 100;
+}
+
+/* COMBAT EFFECTS */
+.shake {
+    animation: shake 0.2s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+@keyframes shake {
+
+    10%,
+    90% {
+        transform: translate3d(-1px, 0, 0);
+    }
+
+    20%,
+    80% {
+        transform: translate3d(2px, 0, 0);
+    }
+
+    30%,
+    50%,
+    70% {
+        transform: translate3d(-4px, 0, 0);
+    }
+
+    40%,
+    60% {
+        transform: translate3d(4px, 0, 0);
+    }
+}
+
+/* HIT EFFECTS */
+.hit-flash {
+    animation: hit-flash-shake 0.3s;
+}
+
+/* Light Hit (For Multi-Shot) */
+.hit-light {
+    animation: hit-flash-light 0.2s;
+    position: relative;
+}
+
+@keyframes hit-flash-light {
+    0% {
+        filter: sepia(100%) hue-rotate(-50deg) saturate(300%) brightness(1.2);
+        transform: translate(0, 0);
+    }
+
+    25% {
+        transform: translate(-2px, 2px);
+    }
+
+    50% {
+        transform: translate(2px, -2px);
+    }
+
+    75% {
+        transform: translate(-1px, -1px);
+    }
+
+    100% {
+        filter: none;
+        transform: translate(0, 0);
+    }
+}
+
+@keyframes hit-flash-shake {
+    0% {
+        filter: brightness(3) sepia(1) hue-rotate(-50deg) saturate(5);
+        transform: translate(0, 0);
+    }
+
+    25% {
+        transform: translate(-5px, 5px) rotate(5deg);
+    }
+
+    50% {
+        transform: translate(5px, -5px) rotate(-5deg);
+    }
+
+    75% {
+        transform: translate(-5px, -5px) rotate(5deg);
+    }
+
+    100% {
+        filter: none;
+        transform: translate(0, 0) rotate(0);
+    }
+}
+
+.power-up {
+    animation: power-up 0.5s ease-out forwards;
+}
+
+@keyframes power-up {
+    0% {
+        box-shadow: 0 0 0px var(--neon-green);
+        transform: scale(1);
+    }
+
+    50% {
+        box-shadow: 0 0 30px var(--neon-green);
+        transform: scale(1.1);
+    }
+
+    100% {
+        box-shadow: 0 0 0px var(--neon-green);
+        transform: scale(1);
+    }
+}
+
+/* PROJECTILE STYLING */
+.projectile {
+    position: fixed;
+    width: 40px;
+    height: 40px;
+    z-index: 3000;
+    pointer-events: none;
+    transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    filter: drop-shadow(0 0 10px var(--neon-blue));
+}
+
+.projectile img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.overload-flare {
+    position: absolute;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, white 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 90;
+    opacity: 0;
+    animation: flare 0.8s ease-in-out forwards;
+}
+
+@keyframes flare {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    20% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+.monster.exploding img {
+    filter: brightness(5) contrast(2);
+}
+
+@keyframes explode-flash {
+    from {
+        transform: scale(1);
+        filter: brightness(1) contrast(1);
+    }
+
+    to {
+        transform: scale(1.3);
+        filter: brightness(3) contrast(2) invert(1);
+    }
+}
+
+@keyframes vulnerable-pulse {
+    from {
+        box-shadow: 0 0 5px transparent;
+    }
+
+    to {
+        box-shadow: 0 0 15px var(--neon-red);
+    }
+}
+
+.monster img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    position: relative;
+    z-index: 20;
+}
+
+/* Pellicle Ring Visuals */
+.pellicle-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 1 / 1;
+    border: 2px solid var(--neon-blue);
+    border-radius: 50%;
+    pointer-events: none;
+    box-shadow: 0 0 10px var(--neon-blue);
+    opacity: 0.6;
+    transition: all 0.3s;
+    z-index: 10;
+    /* Below monster image */
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+/* Center Zone */
+.center-zone {
+    height: 100px;
+    /* Slightly taller for 3 lines */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* CONTAINER SPAWN ANIMATION */
+.container-spawn {
+    animation: container-drop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes container-drop {
+    0% {
+        transform: translateY(-50px) scale(0.5);
+        opacity: 0;
+    }
+
+    60% {
+        transform: translateY(10px) scale(1.1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* INVALID TARGET FEEDBACK */
+.slot.invalid-target {
+    position: relative !important;
+    border-color: #ff0000 !important;
+    background: rgba(255, 0, 0, 0.3) !important;
+    box-shadow: 0 0 40px #ff0000, inset 0 0 20px #ff0000 !important;
+    z-index: 10000;
+}
+
+.slot.invalid-target::after {
+    content: "✕" !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    font-size: 110px !important;
+    color: #ff0000 !important;
+    font-weight: 900 !important;
+    text-shadow: 0 0 20px black, 0 0 40px red, 0 0 60px red !important;
+    z-index: 20000 !important;
+    pointer-events: none !important;
+    display: block !important;
+    animation: pulse-invalid-x 0.4s infinite alternate !important;
+}
+
+@keyframes pulse-invalid-x {
+    from {
+        opacity: 0.8;
+        transform: translate(-50%, -50%) scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+}
+
+.vs-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0px;
+    /* Reduced gap */
+}
+
+.vs-logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.8rem;
+    /* Small as requested */
+    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 4px;
+    font-weight: 300;
+}
+
+.phase-display {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--neon-blue);
+    text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
+    text-transform: uppercase;
+    letter-spacing: 5px;
+}
+
+.player-team {
+    margin-top: 20px;
+}
+
+.enemy-team {
+    margin-bottom: 20px;
+    /* Removed rotation to fix reversed text and point vanguard forward */
+}
+
+/* CSS Cleaned */
+
+/* CSS Cleaned - Removing Footer placeholder */
+
+/* Pellicle Counter Badge */
+.pellicle-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 24px;
+    height: 24px;
+    background: #000;
+    border: 1px solid var(--neon-blue);
+    border-radius: 50%;
+    color: var(--neon-blue);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.9rem;
+    font-weight: bold;
+    z-index: 30;
+    /* Highest layer */
+    box-shadow: 0 0 5px var(--neon-blue);
+    pointer-events: none;
+    /* Let clicks pass through to monster */
+}
+
+/* Drag & Drop Visuals */
+.slot.drag-over {
+    border-color: var(--neon-green);
+    box-shadow: 0 0 20px var(--neon-green), inset 0 0 10px var(--neon-green);
+    background: rgba(10, 255, 0, 0.1);
+    transform: scale(1.1);
+}
+
+/* Enemy Target Lock Visual */
+.slot.target-lock {
+    border-color: var(--neon-red);
+    box-shadow: 0 0 25px var(--neon-red), inset 0 0 15px var(--neon-red);
+    border-style: solid;
+    /* Solid border for lock-on */
+    animation: pulse-red 0.5s infinite alternate;
+}
+
+@keyframes pulse-red {
+    from {
+        box-shadow: 0 0 10px var(--neon-red);
+    }
+
+    to {
+        box-shadow: 0 0 30px var(--neon-red);
+    }
+}
+
+/* Draggable Pellicle Source */
+.draggable-source {
+    position: relative;
+    width: 76px;
+    /* 66px * 1.15 */
+    height: 76px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: grab;
+    transition: all 0.3s;
+}
+
+.draggable-source:active {
+    cursor: grabbing;
+}
+
+.draggable-source.disabled {
+    filter: grayscale(100%);
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+#pellicle-source {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 10px var(--neon-blue)) drop-shadow(0 0 5px white);
+}
+
+.pool-counter {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: black;
+    color: var(--neon-green);
+    border: 1px solid var(--neon-green);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+    box-shadow: 0 0 5px var(--neon-green);
+}
+
+.phase-sub-text {
+    font-family: 'Orbitron', sans-serif;
+    color: rgba(255, 255, 255, 0.6);
+    /* Slightly more visible in center */
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-top: 5px;
+    text-align: center;
+}
+
+/* TOOLTIP STYLES */
+#ability-tooltip.tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: #0a141e !important;
+    /* Solid dark background */
+    border: 2px solid var(--neon-blue);
+    padding: 15px;
+    border-radius: 10px;
+    width: 260px;
+    z-index: 5000;
+    /* Extremely high z-index */
+    box-shadow: 0 0 30px rgba(0, 243, 255, 0.4);
+    display: block;
+    /* Ensure display is not being messed with */
+}
+
+#ability-tooltip.tooltip.hidden {
+    display: none;
+    opacity: 0;
+}
+
+.tooltip h3 {
+    margin: 0 0 10px 0;
+    font-family: 'Orbitron', sans-serif;
+    color: var(--neon-blue);
+    font-size: 1.1rem;
+    border-bottom: 1px solid rgba(0, 243, 255, 0.3);
+    padding-bottom: 5px;
+    text-transform: uppercase;
+}
+
+.tooltip-section {
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.tooltip-label {
+    display: block;
+    color: var(--neon-green);
+    font-weight: bold;
+    font-size: 0.75rem;
+    margin-bottom: 2px;
+}
+
+#tooltip-attack {
+    color: #fff;
+}
+
+#tooltip-passive {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* PHASE ANNOUNCEMENT ANIMATION */
+.phase-announce {
+    animation: phase-pop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes phase-pop {
+    0% {
+        opacity: 0;
+        transform: scale(0.5) translateY(20px);
+        letter-spacing: -2px;
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.2);
+        letter-spacing: 2px;
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1);
+        letter-spacing: 1px;
+    }
+}
