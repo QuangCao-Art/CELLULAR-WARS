@@ -392,7 +392,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function runAIAction() {
-        // AI simple action logic: Attack player Vanguard if alive
+        // AI action logic with full ability support
         const livingAI = enemyTeam.filter(m => !m.isDead && m.pellicle > 0);
         if (livingAI.length === 0) {
             setTimeout(() => endTurn(), 1000);
@@ -403,23 +403,119 @@ document.addEventListener('DOMContentLoaded', () => {
         const attacker = livingAI.sort((a, b) => b.pellicle - a.pellicle)[0];
         const attackerIdx = enemyTeam.indexOf(attacker);
 
-        // Pick a victim (Prefer player Vanguard)
+        // Pick a victim based on attacker type
         const livingPlayer = playerTeam.filter(m => !m.isDead);
         if (livingPlayer.length === 0) {
             setTimeout(() => endTurn(), 1000);
             return;
         }
 
-        let victimIdx = 0; // Vanguard
-        if (playerTeam[0].isDead) {
-            const wings = livingPlayer.map(m => playerTeam.indexOf(m));
-            victimIdx = wings[Math.floor(Math.random() * wings.length)];
+        let victimIdx = 0; // Default: Vanguard
+        let useAbility = false;
+
+        // CANOBOLUS: Ballistic Volley (use if 3+ pellicles)
+        if (attacker.id.includes('cano') && attacker.pellicle >= 3) {
+            // Target vanguard or random living monster
+            if (!playerTeam[0].isDead) {
+                victimIdx = 0;
+            } else {
+                const wings = livingPlayer.map(m => playerTeam.indexOf(m));
+                victimIdx = wings[Math.floor(Math.random() * wings.length)];
+            }
+
+            const count = attacker.pellicle;
+            updateBattleLog(`AI: ${attacker.name} FIRES BALLISTIC VOLLEY (${count} SHOTS)`);
+
+            // Fire volley
+            for (let i = 0; i < count; i++) {
+                setTimeout(() => {
+                    if (!attacker.isDead && attacker.pellicle > 0) {
+                        attacker.pellicle -= 1;
+                        renderEnemyFormation();
+                    }
+
+                    triggerProjectile(attackerIdx, victimIdx, false, () => {
+                        resolveHit(playerTeam[victimIdx], victimIdx, playerTeam, attacker, attackerIdx, enemyTeam);
+                        renderFormation();
+                        renderEnemyFormation();
+                    }, 100);
+                }, i * 80);
+            }
+
+            setTimeout(() => endTurn(), count * 80 + 1000);
+            return;
         }
 
-        // Action Cost (Keep it simple: standard attack for AI)
+        // LYDROSOME: Hydro Shot (bypass vanguard if it's strong)
+        if (attacker.id.includes('lydro') && attacker.pellicle >= 2) {
+            // Bypass vanguard if it has 3+ pellicles and wings are available
+            if (playerTeam[0].pellicle >= 3 && (livingPlayer.length > 1)) {
+                const wings = livingPlayer.filter(m => playerTeam.indexOf(m) !== 0);
+                if (wings.length > 0) {
+                    victimIdx = playerTeam.indexOf(wings[Math.floor(Math.random() * wings.length)]);
+                    useAbility = true;
+                }
+            } else if (playerTeam[0].isDead) {
+                // Vanguard is dead, target wings
+                const wings = livingPlayer.map(m => playerTeam.indexOf(m));
+                victimIdx = wings[Math.floor(Math.random() * wings.length)];
+                useAbility = true;
+            }
+
+            if (useAbility || attacker.pellicle >= 2) {
+                attacker.pellicle -= 2;
+                renderEnemyFormation();
+
+                triggerProjectile(attackerIdx, victimIdx, false, () => {
+                    updateBattleLog(`AI: ${attacker.name} USES HYDRO SHOT!`);
+                    resolveHit(playerTeam[victimIdx], victimIdx, playerTeam, attacker, attackerIdx, enemyTeam);
+                    renderFormation();
+                    setTimeout(() => endTurn(), 1000);
+                }, 200);
+                return;
+            }
+        }
+
+        // NITROPHIL: Nitro Blast (splash damage)
+        if (attacker.id.includes('nitro') && attacker.pellicle >= 2) {
+            // Prefer vanguard for splash to neighbors
+            victimIdx = 0;
+            if (playerTeam[0].isDead && livingPlayer.length > 0) {
+                // If vanguard dead, target a wing (splash to other wing)
+                const wings = livingPlayer.map(m => playerTeam.indexOf(m));
+                victimIdx = wings[Math.floor(Math.random() * wings.length)];
+            }
+
+            attacker.pellicle -= 2;
+            renderEnemyFormation();
+
+            triggerProjectile(attackerIdx, victimIdx, false, () => {
+                updateBattleLog(`AI: ${attacker.name} USES NITRO BLAST!`);
+                resolveHit(playerTeam[victimIdx], victimIdx, playerTeam, attacker, attackerIdx, enemyTeam);
+
+                // SPLASH DAMAGE
+                let neighbors = (victimIdx === 0) ? [1, 2] : [0];
+                neighbors.forEach(nIdx => {
+                    const neighbor = playerTeam[nIdx];
+                    if (!neighbor.isDead) resolveHit(neighbor, nIdx, playerTeam);
+                });
+
+                renderFormation();
+                setTimeout(() => endTurn(), 1000);
+            }, 200);
+            return;
+        }
+
+        // FALLBACK: Basic attack (if not enough pellicles for ability)
         const cost = (attacker.id.includes('nitro') || attacker.id.includes('lydro')) ? 2 : 1;
 
         if (attacker.pellicle >= cost) {
+            // Default targeting
+            if (playerTeam[0].isDead) {
+                const wings = livingPlayer.map(m => playerTeam.indexOf(m));
+                victimIdx = wings[Math.floor(Math.random() * wings.length)];
+            }
+
             attacker.pellicle -= cost;
             renderEnemyFormation();
 
@@ -428,7 +524,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 resolveHit(playerTeam[victimIdx], victimIdx, playerTeam, attacker, attackerIdx, enemyTeam);
                 renderFormation();
                 setTimeout(() => endTurn(), 1000);
-            }, 200); // AI attacks are now slower (200ms)
+            }, 200);
         } else {
             // Cannot afford attack
             setTimeout(() => endTurn(), 1000);
@@ -1549,6 +1645,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- TOUCH SUPPORT FOR MOBILE ---
     let touchGhost = null;
+    let touchedToken = null; // Store reference to touched pellicle token
 
     function handleTouchStart(e, index, type) {
         // Prevent scrolling while dragging
@@ -1574,6 +1671,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentPhase !== 'REINFORCE' || isAITurn || isGameOver) return;
             isDraggingPellicleFlag = true;
             isDraggingPlayerFlag = false;
+
+            // Store token reference and hide it
+            touchedToken = target;
+            touchedToken.style.opacity = '0.3';
+            touchedToken.style.pointerEvents = 'none';
 
             createTouchGhost(target, touch);
         }
@@ -1650,13 +1752,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentTarget: slot,
                     dataTransfer: {
                         getData: (key) => {
-                            if (isDraggingPellicleFlag) return 'type:pellicle;id:touch-token';
+                            if (isDraggingPellicleFlag) {
+                                // Use the actual token ID if available
+                                const tokenId = touchedToken ? touchedToken.id : 'touch-token';
+                                return `type:pellicle;id:${tokenId}`;
+                            }
                             if (isDraggingPlayerFlag) return `type:monster;index:${draggedIndex}`;
                             return '';
                         }
                     }
                 };
                 handleDropPlayerSlot(mockEvent, targetIndex);
+
+                // Remove the touched token if drop was successful
+                if (isDraggingPellicleFlag && touchedToken) {
+                    touchedToken.remove();
+                }
             } else if (isEnemySlot) {
                 const mockEvent = {
                     preventDefault: () => { },
@@ -1672,6 +1783,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Cleanup
         if (touchGhost) touchGhost.remove();
         touchGhost = null;
+
+        // Restore token if not dropped successfully
+        if (touchedToken) {
+            touchedToken.style.opacity = '1';
+            touchedToken.style.pointerEvents = 'auto';
+            touchedToken = null;
+        }
+
         draggedIndex = null;
         isDraggingPlayerFlag = false;
         isDraggingPellicleFlag = false;
