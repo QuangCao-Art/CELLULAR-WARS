@@ -97,6 +97,55 @@ body {
     box-shadow: 0 0 30px var(--neon-blue);
 }
 
+/* SHORTCUT BUTTONS */
+.btn-shortcut {
+    position: absolute;
+    top: 20px;
+    width: 46px;
+    /* Increased 15% from 40px */
+    height: 46px;
+    /* Increased 15% from 40px */
+    background: transparent;
+    /* "Super simplistic" - no background */
+    border: none;
+    /* Removed border */
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.btn-shortcut:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-shortcut img {
+    width: 28px;
+    /* Increased 15% from 24px */
+    height: 28px;
+    /* Increased 15% from 24px */
+    opacity: 0.5;
+    /* White 50% opacity */
+    filter: brightness(0) invert(1);
+    /* Force white icon */
+    transition: all 0.2s;
+}
+
+.btn-shortcut:hover img {
+    opacity: 0.8;
+}
+
+.btn-shortcut.left-top {
+    left: 20px;
+}
+
+.btn-shortcut.right-top {
+    right: 20px;
+}
+
 /* GAME BOARD */
 #game-board {
     display: flex;
@@ -111,6 +160,20 @@ body {
     letter-spacing: 2px;
     margin-bottom: 5px;
     text-align: center;
+}
+
+#battle-log {
+    font-family: 'Orbitron', sans-serif;
+    color: rgba(255, 255, 255, 0.5);
+    /* 50% opacity via alpha channel */
+    font-size: 0.63rem;
+    /* 10% smaller than 0.7rem */
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 10px;
+    text-align: center;
+    width: 100%;
+    z-index: 100;
 }
 
 .battlefield {
@@ -531,6 +594,11 @@ body {
     /* Below monster image */
 }
 
+.pellicle-ring.enemy-ring {
+    border-color: #ff9900;
+    box-shadow: 0 0 10px #ff9900;
+}
+
 @keyframes float {
 
     0%,
@@ -665,6 +733,20 @@ body {
     text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
     text-transform: uppercase;
     letter-spacing: 5px;
+}
+
+.phase-sub-text {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 5px;
+    transition: all 0.3s;
+}
+
+.phase-sub-text.exhausted {
+    font-size: 0.8rem;
+    /* ~10% smaller than 0.9rem */
+    opacity: 0.5;
+    color: var(--neon-red);
 }
 
 .player-team {
@@ -1015,10 +1097,27 @@ body {
 }
 
 .db-monster-card p {
-    font-size: 0.85rem;
-    line-height: 1.3;
-    margin: 0;
-    color: #ccc;
+    font-size: 0.75rem;
+    /* Slightly smaller for more text */
+    line-height: 1.4;
+    margin: 2px 0 8px 0;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.db-ability {
+    text-align: left;
+    margin-top: 10px;
+    border-top: 1px solid rgba(0, 243, 255, 0.1);
+    padding-top: 8px;
+}
+
+.db-ability .label {
+    display: block;
+    font-size: 0.65rem;
+    color: var(--neon-blue);
+    font-weight: bold;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
 }
 
 /* Custom Scrollbar for DB */
@@ -1037,4 +1136,214 @@ body {
 
 .database-container::-webkit-scrollbar-thumb:hover {
     background: var(--neon-green);
+}
+
+/* DATABASE FOOTER */
+.db-footer {
+    display: flex;
+    gap: 20px;
+    margin-top: 30px;
+    justify-content: center;
+}
+
+/* RULEBOOK SCREEN */
+#rulebook-screen {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    align-items: center;
+    background: radial-gradient(circle at center, #0a152a 0%, #050a14 100%);
+}
+
+.rulebook-container {
+    flex: 1;
+    overflow-y: auto;
+    width: 100%;
+    max-height: 70vh;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+}
+
+.rb-section {
+    margin-bottom: 25px;
+    text-align: left;
+}
+
+.rb-section h3 {
+    color: var(--neon-blue);
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(0, 243, 255, 0.3);
+    font-family: 'Orbitron', sans-serif;
+}
+
+.rb-section p,
+.rb-section ul,
+.rb-section ol {
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.6;
+}
+
+.rb-section ul,
+.rb-section ol {
+    padding-left: 20px;
+    margin: 10px 0;
+}
+
+.rb-section li {
+    margin-bottom: 10px;
+}
+
+.rb-section strong {
+    color: white;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+/* Custom Scrollbar for RuleBook */
+.rulebook-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.rulebook-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.rulebook-container::-webkit-scrollbar-thumb {
+    background: var(--neon-blue);
+    border-radius: 3px;
+}
+
+.rulebook-container::-webkit-scrollbar-thumb:hover {
+    background: var(--neon-green);
+}
+
+#btn-rb-back {
+    margin-top: auto;
+}
+
+/* --- MOBILE RESPONSIVE --- */
+
+/* Portrait and Small Screens */
+@media (max-width: 600px),
+(max-height: 700px) {
+    #game-container {
+        max-width: 100%;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    .game-title {
+        font-size: 2.2rem;
+        margin-bottom: 30px;
+    }
+
+    .btn-neon {
+        padding: 12px 30px;
+        font-size: 1rem;
+    }
+
+    /* Scaling Battlefield for Portrait */
+    .battlefield {
+        transform: scale(0.85);
+        transform-origin: center center;
+    }
+
+    .team-formation {
+        gap: 15px;
+        padding: 10px;
+    }
+
+    .monster {
+        width: 100px;
+        height: 100px;
+    }
+
+    .slot {
+        width: 90px;
+        height: 90px;
+    }
+
+    .pellicle-token {
+        width: 60px;
+        height: 60px;
+    }
+
+    .phase-display {
+        font-size: 1.1rem;
+        letter-spacing: 3px;
+    }
+
+    .turn-counter {
+        font-size: 0.6rem;
+    }
+
+    .center-zone {
+        height: 80px;
+    }
+
+    /* Database Mobile */
+    .monster-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .db-monster-card {
+        display: flex;
+        align-items: center;
+        text-align: left;
+        gap: 15px;
+        padding: 10px;
+    }
+
+    .db-monster-card img {
+        width: 50px;
+        height: 50px;
+        margin-bottom: 0;
+    }
+
+    .db-ability {
+        margin-top: 0;
+        border-top: none;
+        padding-top: 0;
+        flex: 1;
+    }
+}
+
+/* Landscape Mobile (Short Height) */
+@media (max-height: 500px) and (orientation: landscape) {
+    .battlefield {
+        flex-direction: row;
+        gap: 50px;
+        transform: scale(0.7);
+    }
+
+    .center-zone {
+        width: 150px;
+        height: 100%;
+    }
+
+    .game-title {
+        font-size: 2rem;
+        margin-bottom: 10px;
+    }
+
+    .menu-options {
+        flex-direction: row;
+    }
+}
+
+/* Touch Support Visuals */
+.touch-drag-ghost {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(1.1);
+    filter: drop-shadow(0 0 15px var(--neon-blue));
 }

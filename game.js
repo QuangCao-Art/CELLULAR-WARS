@@ -17,6 +17,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const databaseScreen = document.getElementById('database-screen');
     const btnCollection = document.getElementById('btn-collection');
     const btnDbBack = document.getElementById('btn-db-back');
+    const btnBattleBack = document.getElementById('btn-battle-back');
+    const btnBattleDb = document.getElementById('btn-battle-db');
+    const rulebookScreen = document.getElementById('rulebook-screen');
+    const btnRulebook = document.getElementById('btn-db-rulebook');
+    const btnRbBack = document.getElementById('btn-rb-back');
 
     // Tooltip Elements
     const tooltip = document.getElementById('ability-tooltip');
@@ -92,6 +97,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let pelliclePool = 0;
     let turnNumber = 1;
     let isAITurn = false; // Tracks if the AI is currently moving
+    let previousScreen = 'main-menu'; // Tracks where to return from Database screen
+    let actionTaken = false; // Tracks if an action (move or attack) was taken this turn
+    let isGameOver = false; // Prevents further actions after game ends
 
     // Drag State (GLOBAL FLAGS - EXTREMELY ROBUST)
     let draggedIndex = null;
@@ -112,43 +120,92 @@ document.addEventListener('DOMContentLoaded', () => {
         battleLog.style.animation = 'log-fade-in 0.5s ease-out';
     }
 
-    // --- INITIALIZATION ---
     function initGame() {
-        console.log("Initializing Game State...");
+        console.log("Initializing Game UI...");
         if (rotateBtn) rotateBtn.style.display = 'none';
-
-        if (endTurnBtn) {
-            endTurnBtn.addEventListener('click', () => {
-                updateBattleLog("PLAYER ENDS TURN MANUALLY");
-                endTurn();
-            });
-        }
-
-        if (startActionBtn) {
-            startActionBtn.addEventListener('click', () => {
-                updateBattleLog("PLAYER STARTS ACTION PHASE MANUALLY");
-                endReinforcePhase();
-            });
-        }
-
-        if (btnCollection) {
-            btnCollection.addEventListener('click', () => {
-                mainMenu.classList.add('hidden');
-                databaseScreen.classList.remove('hidden');
-            });
-        }
-
-        if (btnDbBack) {
-            btnDbBack.addEventListener('click', () => {
-                databaseScreen.classList.add('hidden');
-                mainMenu.classList.remove('hidden');
-            });
-        }
 
         updateUI();
         bindSlotDropZones();
         bindEnemyDropZones();
-        // REMOVED: bindPellicleSource(); -> Replaced by spawnPellicleTokens logic
+    }
+
+    // --- BUTTON EVENT LISTENERS (BOUND ONCE) ---
+    if (endTurnBtn) {
+        endTurnBtn.addEventListener('click', () => {
+            if (isGameOver) return;
+            updateBattleLog("PLAYER ENDS TURN MANUALLY");
+            endTurn();
+        });
+    }
+
+    if (startActionBtn) {
+        startActionBtn.addEventListener('click', () => {
+            if (isGameOver) return;
+            updateBattleLog("PLAYER STARTS ACTION PHASE MANUALLY");
+            endReinforcePhase();
+        });
+    }
+
+    function resetGameState() {
+        console.log("Resetting Game State...");
+        isGameOver = false;
+        turnNumber = 1;
+        pelliclePool = 0;
+        actionTaken = false;
+        isAITurn = false;
+        currentPhase = 'REINFORCE';
+        lastAnnouncedPhase = '';
+
+        // Reset Teams (restore initial stats)
+        playerTeam = [
+            {
+                id: 'nitro', name: 'Nitrophil', pellicle: 1, max: 5, hasSwapped: false, attackCount: 0, isDead: false,
+                ability: {
+                    attack: "Nitro Blast (2P): Destroy 1 Pellicle + splash 1 damage to neighbors.",
+                    passive: "Reactive Membrane: Reflect 1 damage to attacker when hit."
+                }
+            },
+            {
+                id: 'lydro', name: 'Lydrosome', pellicle: 1, max: 5, hasSwapped: false, attackCount: 0, isDead: false,
+                ability: {
+                    attack: "Hydro Shot (2P): Bypass Vanguard to hit Wings directly.",
+                    passive: "Osmotic Flow: Transfer Pellicles to allies during Reinforce Phase."
+                }
+            },
+            {
+                id: 'cano', name: 'Canobolus', pellicle: 1, max: 5, hasSwapped: false, attackCount: 0, isDead: false,
+                ability: {
+                    attack: "Ballistic Volley (XP): Burn all X Pellicles to destroy X enemy Pellicles.",
+                    passive: "Root Synergy: Receive +1 bonus Pellicle when reinforced."
+                }
+            }
+        ];
+
+        enemyTeam = [
+            {
+                id: 'e_nitro', name: 'Nitrophil', pellicle: 1, max: 5, isDead: false,
+                ability: {
+                    attack: "Nitro Blast (2P): Destroy 1 Pellicle + splash 1 damage to neighbors.",
+                    passive: "Reactive Membrane: Reflect 1 damage to attacker when hit."
+                }
+            },
+            {
+                id: 'e_lydro', name: 'Lydrosome', pellicle: 1, max: 5, isDead: false,
+                ability: {
+                    attack: "Hydro Shot (2P): Bypass Vanguard to hit Wings directly.",
+                    passive: "Osmotic Flow: Transfer Pellicles to allies during Reinforce Phase."
+                }
+            },
+            {
+                id: 'e_cano', name: 'Canobolus', pellicle: 1, max: 5, isDead: false,
+                ability: {
+                    attack: "Ballistic Volley (XP): Burn all X Pellicles to destroy X enemy Pellicles.",
+                    passive: "Root Synergy: Receive +1 bonus Pellicle when reinforced."
+                }
+            }
+        ];
+
+        updateBattleLog("WAITING FOR ACTION...");
     }
 
     // --- UTILS: SPAWN TOKENS ---
@@ -213,6 +270,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 // If consumed, it is removed in drop handler
             });
 
+            // TOUCH EVENTS
+            token.addEventListener('touchstart', (e) => handleTouchStart(e, i, 'pellicle'), { passive: false });
+            token.addEventListener('touchmove', handleTouchMove, { passive: false });
+            token.addEventListener('touchend', handleTouchEnd, { passive: false });
+
             layer.appendChild(token);
         }
     }
@@ -243,6 +305,8 @@ document.addEventListener('DOMContentLoaded', () => {
             m.hasSwapped = false;
             m.attackCount = 0; // Reset counter
         });
+
+        actionTaken = false; // Reset team action flag
 
         updateTurnIndicator();
         updateTurnIndicator();
@@ -364,7 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 resolveHit(playerTeam[victimIdx], victimIdx, playerTeam, attacker, attackerIdx, enemyTeam);
                 renderFormation();
                 setTimeout(() => endTurn(), 1000);
-            });
+            }, 200); // AI attacks are now slower (200ms)
         } else {
             // Cannot afford attack
             setTimeout(() => endTurn(), 1000);
@@ -463,6 +527,8 @@ document.addEventListener('DOMContentLoaded', () => {
             renderFormation();
             renderEnemyFormation();
             console.log(`BOOM! ${monster.name} exploded!`);
+
+            checkGameOver();
         }, 800);
     }
 
@@ -518,7 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Dynamic tokens are now used instead of a static source.
     // 4. DRAG & DROP HANDLERS
     function handleDragStartMonster(e, index) {
-        if (isAITurn) {
+        if (isAITurn || isGameOver) {
             e.preventDefault();
             return;
         }
@@ -586,7 +652,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     function handleDragLeave(e) {
-        if (isAITurn) return;
+        if (isAITurn || isGameOver) return;
         e.currentTarget.classList.remove('drag-over');
         clearActionIndicators(e.currentTarget);
     }
@@ -597,7 +663,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.currentTarget.classList.remove('drag-over');
         clearActionIndicators(e.currentTarget);
 
-        if (isAITurn) return;
+        if (isAITurn || isGameOver) return;
 
         // 1. Check DataTransfer FIRST to get Token ID
         const rawData = e.dataTransfer.getData('text/plain');
@@ -653,6 +719,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            if (actionTaken) {
+                showGameMessage("Action already taken this turn!", "red");
+                return;
+            }
+
             const sourceIndex = parseInt(rawData.split('index:')[1]);
             if (!isNaN(sourceIndex) && sourceIndex !== targetIndex) {
                 console.log(`Swapping Monster ${sourceIndex} -> ${targetIndex}`);
@@ -665,7 +736,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 playerTeam[sourceIndex] = { ...target };
                 playerTeam[targetIndex] = temp;
 
+                actionTaken = true; // Mark action as taken
                 renderFormation();
+                updatePhaseUI();
                 setTimeout(() => {
                     updateBattleLog(`${source.name} SWAPS WITH ${target.name}`);
                 }, 100);
@@ -679,7 +752,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.currentTarget.classList.remove('target-lock');
         clearActionIndicators(e.currentTarget);
 
-        if (isAITurn) return;
+        if (isAITurn || isGameOver) return;
 
         // IF REINFORCE PHASE
         if (currentPhase === 'REINFORCE') {
@@ -744,7 +817,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // ATTACK LIMIT CHECK (Normal: 1, Last Stand: 2)
+        if (actionTaken) {
+            showGameMessage("Action already taken this turn!", "red");
+            return;
+        }
+
         const isLastStand = checkLastStand(playerTeam);
         const maxAttacks = isLastStand ? 2 : 1;
 
@@ -776,11 +853,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         resolveHit(victim, victimIndex, enemyTeam, attacker, attackerIndex, playerTeam);
                         renderEnemyFormation();
                         renderFormation(); // Update Canobolus in case of reflect damage
-                    });
+                    }, 100); // Canobolus remains fast (100ms)
                 }, i * 80); // RAPID FIRE: 80ms interval (Super Fast)
             }
 
             updateBattleLog(`${attacker.name} FIRES BALLISTIC VOLLEY (${count} SHOTS)`);
+            actionTaken = true; // Mark action as taken (even though volley is multiple shots)
+            updatePhaseUI();
 
             return;
         }
@@ -804,10 +883,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             renderEnemyFormation();
-        });
+            renderFormation();
+            checkGameOver();
+        }, 200); // Ability single attacks are now slower (200ms)
+
+        actionTaken = true; // Mark action as taken
+        updatePhaseUI();
     }
 
-    function triggerProjectile(attackerIndex, victimIndex, isPlayerAttacking, onHit) {
+    function triggerProjectile(attackerIndex, victimIndex, isPlayerAttacking, onHit, duration = 100) {
         const sourceSlot = getSlotElement(attackerIndex, isPlayerAttacking);
         const targetSlot = getSlotElement(victimIndex, !isPlayerAttacking);
 
@@ -830,8 +914,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Force reflow
         void bullet.offsetWidth;
 
-        // Custom duration for snappier feel
-        bullet.style.transition = "transform 0.1s linear";
+        // Custom duration
+        bullet.style.transition = `transform ${duration / 1000}s linear`;
 
         // End position
         bullet.style.transform = `translate(${targetRect.left - sourceRect.left}px, ${targetRect.top - sourceRect.top}px)`;
@@ -839,7 +923,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             bullet.remove();
             if (onHit) onHit();
-        }, 100); // 0.1s travel time
+        }, duration);
     }
 
     function resolveHit(victim, victimIndex, team, attacker = null, attackerIndex = -1, attackerTeam = null, hitType = 'heavy') {
@@ -886,6 +970,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 showGameMessage(`${attacker.name} killed by reflect!`, "gray");
             }
         }
+
+        checkGameOver();
+    }
+
+    // --- WIN/LOSS LOGIC ---
+    function checkGameOver() {
+        if (isGameOver) return;
+
+        const playerWipe = playerTeam.every(m => m.isDead);
+        const enemyWipe = enemyTeam.every(m => m.isDead);
+
+        if (enemyWipe) {
+            isGameOver = true;
+            showGameOverEffect("DIVISION COMPLETE", "var(--neon-green)");
+        } else if (playerWipe) {
+            isGameOver = true;
+            showGameOverEffect("DIVISION FAILURE", "var(--neon-red)");
+        }
+    }
+
+    function showGameOverEffect(message, color) {
+        // 1. UPDATE PHASE UI
+        phaseMsg.innerText = message;
+        phaseMsg.style.color = color;
+        phaseMsg.style.textShadow = `0 0 10px ${color}, 0 0 20px ${color}`;
+        phaseSubMsg.innerText = "RETURNING TO BASE...";
+        phaseSubMsg.classList.remove('exhausted');
+
+        // Hide buttons
+        if (endTurnBtn) endTurnBtn.classList.add('hidden');
+        if (startActionBtn) startActionBtn.classList.add('hidden');
+
+        // 2. DELAYED RETURN TO MENU
+        setTimeout(() => {
+            gameBoard.classList.add('hidden');
+            mainMenu.classList.remove('hidden');
+            // reset state for next game?
+            // we probably need a reset function if we want to play again without refreshing
+        }, 3000);
     }
 
     // --- VISUAL RENDERING SYSTEM ---
@@ -907,6 +1030,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 phaseMsg.style.color = "var(--neon-green)";
                 phaseMsg.style.textShadow = "0 0 10px var(--neon-green), 0 0 20px var(--neon-green)";
                 phaseSubMsg.innerText = isAITurn ? "COMPUTER IS PREPARING..." : "DRAG PELLICLE TO REINFORCE";
+                phaseSubMsg.classList.remove('exhausted'); // Clear exhaustion style
                 if (reinforceZone) reinforceZone.classList.remove('disabled');
                 if (endTurnBtn) endTurnBtn.classList.add('hidden');
 
@@ -922,11 +1046,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     phaseMsg.style.color = "var(--neon-blue)"; // Blue for calm/statuesque
                     phaseMsg.style.textShadow = "0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue)";
                     phaseSubMsg.innerText = "CANNOT ATTACK OR SWAP IN TURN 1";
+                    phaseSubMsg.classList.remove('exhausted');
                 } else {
                     phaseMsg.innerText = isAITurn ? "AI ATTACKING" : "ATTACK PHASE";
                     phaseMsg.style.color = "var(--neon-red)";
                     phaseMsg.style.textShadow = "0 0 10px var(--neon-red), 0 0 20px var(--neon-red)";
-                    phaseSubMsg.innerText = isAITurn ? "BRACE YOURSELF!" : "ATTACK OR MOVE";
+
+                    if (actionTaken && !isAITurn) {
+                        phaseSubMsg.innerText = "ACTION EXHAUSTED - END TURN";
+                        phaseSubMsg.classList.add('exhausted');
+                    } else {
+                        phaseSubMsg.innerText = isAITurn ? "BRACE YOURSELF!" : "ATTACK OR MOVE";
+                        phaseSubMsg.classList.remove('exhausted');
+                    }
                 }
 
                 if (reinforceZone) reinforceZone.classList.add('disabled');
@@ -1067,7 +1199,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleMonsterClick(index) {
         // Only valid for Player Team interaction
-        if (currentPhase !== 'REINFORCE' || isAITurn) return;
+        if (currentPhase !== 'REINFORCE' || isAITurn || isGameOver) return;
 
         const clickedMonster = playerTeam[index];
         if (clickedMonster.isDead) return;
@@ -1179,6 +1311,11 @@ document.addEventListener('DOMContentLoaded', () => {
             div.draggable = true;
             div.addEventListener('dragstart', (e) => handleDragStartMonster(e, index));
             div.addEventListener('dragend', handleDragEndMonster);
+
+            // TOUCH EVENTS
+            div.addEventListener('touchstart', (e) => handleTouchStart(e, index, 'monster'), { passive: false });
+            div.addEventListener('touchmove', handleTouchMove, { passive: false });
+            div.addEventListener('touchend', handleTouchEnd, { passive: false });
         }
 
         div.appendChild(img);
@@ -1199,6 +1336,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < renderCount; i++) {
             const ring = document.createElement('div');
             ring.classList.add('pellicle-ring');
+            if (!isPlayer) ring.classList.add('enemy-ring');
 
             // Scale rings: 1st is smallest (inner), last is largest (outer)
             // base scale 0.6, step 0.1
@@ -1239,9 +1377,59 @@ document.addEventListener('DOMContentLoaded', () => {
     startBtn.addEventListener('click', () => {
         mainMenu.classList.add('hidden');
         gameBoard.classList.remove('hidden');
+        resetGameState();
         initGame();
         startReinforcePhase();
     });
+
+    if (btnCollection) {
+        btnCollection.addEventListener('click', () => {
+            previousScreen = 'main-menu';
+            mainMenu.classList.add('hidden');
+            databaseScreen.classList.remove('hidden');
+        });
+    }
+
+    if (btnDbBack) {
+        btnDbBack.addEventListener('click', () => {
+            databaseScreen.classList.add('hidden');
+            if (previousScreen === 'game-board') {
+                gameBoard.classList.remove('hidden');
+            } else {
+                mainMenu.classList.remove('hidden');
+            }
+        });
+    }
+
+    if (btnBattleBack) {
+        btnBattleBack.addEventListener('click', () => {
+            gameBoard.classList.add('hidden');
+            mainMenu.classList.remove('hidden');
+            // Optional: reset game state if needed, but simple hide for now
+        });
+    }
+
+    if (btnBattleDb) {
+        btnBattleDb.addEventListener('click', () => {
+            previousScreen = 'game-board';
+            gameBoard.classList.add('hidden');
+            databaseScreen.classList.remove('hidden');
+        });
+    }
+
+    if (btnRulebook) {
+        btnRulebook.addEventListener('click', () => {
+            databaseScreen.classList.add('hidden');
+            rulebookScreen.classList.remove('hidden');
+        });
+    }
+
+    if (btnRbBack) {
+        btnRbBack.addEventListener('click', () => {
+            rulebookScreen.classList.add('hidden');
+            databaseScreen.classList.remove('hidden');
+        });
+    }
 
     // --- TOOLTIP LOGIC ---
     function showTooltip(monster, x, y) {
@@ -1359,6 +1547,141 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 2000);
     }
 
-    console.log("CELLULAR WARS: Robust System Ready v0.9");
+    // --- TOUCH SUPPORT FOR MOBILE ---
+    let touchGhost = null;
+
+    function handleTouchStart(e, index, type) {
+        // Prevent scrolling while dragging
+        if (e.cancelable) e.preventDefault();
+
+        const touch = e.touches[0];
+        const target = e.currentTarget;
+
+        // Initialization
+        if (type === 'monster') {
+            if (isAITurn || isGameOver) return;
+            const monster = playerTeam[index];
+            const isTransfer = (currentPhase === 'REINFORCE' && monster.id.includes('lydro') && monster.pellicle > 0);
+            if (!isTransfer && monster.pellicle <= 0) return;
+
+            draggedIndex = index;
+            isDraggingPlayerFlag = true;
+            isDraggingPellicleFlag = false;
+
+            // Ghost setup
+            createTouchGhost(target, touch);
+        } else if (type === 'pellicle') {
+            if (currentPhase !== 'REINFORCE' || isAITurn || isGameOver) return;
+            isDraggingPellicleFlag = true;
+            isDraggingPlayerFlag = false;
+
+            createTouchGhost(target, touch);
+        }
+    }
+
+    function createTouchGhost(source, touch) {
+        if (touchGhost) touchGhost.remove();
+
+        touchGhost = source.cloneNode(true);
+        touchGhost.classList.add('touch-drag-ghost');
+        touchGhost.style.left = touch.clientX + 'px';
+        touchGhost.style.top = touch.clientY + 'px';
+
+        // Fix size scaling if parent is scaled
+        const rect = source.getBoundingClientRect();
+        touchGhost.style.width = rect.width + 'px';
+        touchGhost.style.height = rect.height + 'px';
+
+        document.body.appendChild(touchGhost);
+    }
+
+    function handleTouchMove(e) {
+        if (!touchGhost) return;
+        if (e.cancelable) e.preventDefault();
+
+        const touch = e.touches[0];
+        touchGhost.style.left = touch.clientX + 'px';
+        touchGhost.style.top = touch.clientY + 'px';
+
+        // Check target under finger for visual feedback
+        const el = document.elementFromPoint(touch.clientX, touch.clientY);
+        const slot = el ? el.closest('.slot') : null;
+
+        document.querySelectorAll('.slot').forEach(s => s.classList.remove('drag-over', 'target-lock', 'invalid-target'));
+        clearActionIndicators();
+
+        if (slot) {
+            slot.classList.add('drag-over');
+
+            // Feedback logic parity with mouse handlers
+            if (slot.closest('.enemy-team')) {
+                slot.classList.add('target-lock');
+                if (currentPhase === 'ACTION' && isDraggingPlayerFlag) {
+                    showActionIndicator(slot, 'attack');
+                }
+            } else if (slot.closest('.player-team')) {
+                if (currentPhase === 'ACTION' && isDraggingPlayerFlag) {
+                    showActionIndicator(slot, 'swap');
+                }
+            }
+        }
+    }
+
+    function handleTouchEnd(e) {
+        if (!touchGhost) return;
+        const touch = e.changedTouches[0];
+
+        // Resolve Drop
+        const el = document.elementFromPoint(touch.clientX, touch.clientY);
+        const slot = el ? el.closest('.slot') : null;
+
+        if (slot) {
+            const isPlayerSlot = slot.closest('.player-team');
+            const isEnemySlot = slot.closest('.enemy-team');
+
+            // Find index of slot
+            const slots = document.querySelectorAll(isPlayerSlot ? '.player-team .slot' : '.enemy-team .slot');
+            const targetIndex = Array.from(slots).indexOf(slot);
+
+            if (isPlayerSlot) {
+                // Mocking DataTransfer for touch
+                const mockEvent = {
+                    preventDefault: () => { },
+                    currentTarget: slot,
+                    dataTransfer: {
+                        getData: (key) => {
+                            if (isDraggingPellicleFlag) return 'type:pellicle;id:touch-token';
+                            if (isDraggingPlayerFlag) return `type:monster;index:${draggedIndex}`;
+                            return '';
+                        }
+                    }
+                };
+                handleDropPlayerSlot(mockEvent, targetIndex);
+            } else if (isEnemySlot) {
+                const mockEvent = {
+                    preventDefault: () => { },
+                    currentTarget: slot,
+                    dataTransfer: {
+                        getData: (key) => `type:monster;index:${draggedIndex}`
+                    }
+                };
+                handleDropEnemySlot(mockEvent, targetIndex);
+            }
+        }
+
+        // Cleanup
+        if (touchGhost) touchGhost.remove();
+        touchGhost = null;
+        draggedIndex = null;
+        isDraggingPlayerFlag = false;
+        isDraggingPellicleFlag = false;
+        document.querySelectorAll('.slot').forEach(s => s.classList.remove('drag-over', 'target-lock', 'invalid-target'));
+        clearActionIndicators();
+    }
+
+    // --- INTEGRATION: Adding touch listeners to elements ---
+    // Modified createMonsterDOM and spawnPellicleTokens to include touch listeners
+
+    console.log("CELLULAR WARS: Robust System Ready v0.9 (Mobile Support Enabled)");
 });
 
