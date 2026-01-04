@@ -2,6 +2,21 @@
 
 This document serves as the central repository for recording data and information regarding the **CELLULAR WARS** game project.
 
+## 📌 QUICK START SUMMARY (TÓM TẮT LUẬT CHƠI)
+- **Mục tiêu**: Tiêu diệt toàn bộ 3 quái vật của đối thủ.
+- **Đội hình**: Xếp hình tam giác (**1 Vanguard** - 2 Wings). Vanguard phải bị tiêu diệt trước (trừ đòn xuyên thấu).
+- **Lượt chơi**:
+    1. **Reinforce (Nạp)**: Nhận 2 Pellicle, chia cho quái vật (Tối đa 5 điểm/con).
+    2. **Ability (Kỹ năng)**: Chuyển Pellicle hoặc dùng nội tại.
+    3. **Action (Tấn công)**: Chọn 1 quái vật để bắn (Tốn Pellicle).
+- **Cơ chế Overload**: Nếu con nào nhận hạt Pellicle thứ 6 -> **TỰ NỔ**, gây sát thương lan cho đồng đội bên cạnh.
+- **The Last Stand**: Khi chỉ còn 1 con cuối cùng, nó nhận 3 Pellicle/lượt, không bao giờ bị Overload và được tấn công 2 lần/lượt.
+
+## 🦖 MONSTER SUMMARY (TÓM TẮT QUÁI VẬT)
+- **Nitrophil**: Phản sát thương khi bị đánh. Kỹ năng chủ động gây nổ lan.
+- **Lydrosome**: Chuyền Pellicle cho đồng đội. Kỹ năng chủ động bắn xuyên Vanguard.
+- **Canobolus**: Nhận thêm +1 Pellicle khi được nạp. Kỹ năng chủ động bắn nhiều phát liên tiếp (Dựa trên số Pellicle đang có).
+
 ## 🧬 CELLULAR WARS: RULEBOOK
 
 ### 1. THIẾT LẬP (SETUP) - ĐỘI HÌNH TAM GIÁC
@@ -80,6 +95,7 @@ This document serves as the central repository for recording data and informatio
 *   **Lydrosome**: Trái tim của đội hình, vừa là túi máu, vừa là kẻ khóa chân chủ lực đối phương.
 *   **Canobolus**: Cỗ máy hủy diệt. Chỉ cần nạp 2 lượt là đủ màng để bắn tan nát đội hình địch.
 
+
 ---
 
 ## 🔒 BACKLOG (DỮ LIỆU ĐỂ DÀNH)
@@ -91,3 +107,4 @@ This document serves as the central repository for recording data and informatio
 | **Militon** | Tanker | **Big Slam (2P)**: Sát thương lớn (2 màng). | **Bodyguard**: Buộc địch đánh mình trước. |
 | **Glubess** | Tiếp tế | **Sugar Rush (2P)**: Đánh & Hồi màng. | **Free Gift**: Tặng Pellicle khi vào trận. |
 | **Virob** | Quấy rối | **Quick Rob (2P)**: Đánh & Cướp Pellicle. | **Loot Drop**: Chết là để lại "di chúc" P.
+

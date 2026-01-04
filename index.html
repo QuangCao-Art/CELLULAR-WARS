@@ -20,10 +20,52 @@
             <div class="version">Prototype v0.1</div>
         </div>
 
+        <!-- Database Screen -->
+        <div id="database-screen" class="screen hidden">
+            <h2 class="screen-title">CELLULAR <span class="neon-text">DATA</span></h2>
+
+            <div class="database-container">
+                <div class="db-section">
+                    <h3>📌 QUICK START</h3>
+                    <ul class="db-list">
+                        <li><strong>Vanguard Role:</strong> Must be hit first. Protects the Wings.</li>
+                        <li><strong>Pellicles (P):</strong> Act as both energy and health.</li>
+                        <li><strong>Reinforce:</strong> Gain 2P per turn to distribute.</li>
+                        <li><strong>Overload:</strong> 6+ Pellicles = <strong>BOOM!</strong> (Explodes).</li>
+                        <li><strong>Last Stand:</strong> Final monster becomes immune to Overload.</li>
+                    </ul>
+                </div>
+
+                <div class="db-section">
+                    <h3>🦖 MONSTERS</h3>
+                    <div class="monster-grid">
+                        <div class="db-monster-card">
+                            <img src="Images/Nitrophil.png" alt="Nitrophil">
+                            <h4>Nitrophil</h4>
+                            <p>Reflects damage when hit. Active: Splash attack.</p>
+                        </div>
+                        <div class="db-monster-card">
+                            <img src="Images/Lydrosome.png" alt="Lydrosome">
+                            <h4>Lydrosome</h4>
+                            <p>Transfers Pellicles. Active: Bypass Vanguard.</p>
+                        </div>
+                        <div class="db-monster-card">
+                            <img src="Images/Canobolus.png" alt="Canobolus">
+                            <h4>Canobolus</h4>
+                            <p>Gains +1P when reinforced. Active: Multi-shot volley.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="btn-db-back" class="btn-neon" style="margin-top: 20px;">BACK TO MENU</button>
+        </div>
+
         <!-- Game Board Screen (Hidden by default) -->
         <div id="game-board" class="screen hidden">
 
             <div class="battlefield">
+                <div id="pellicle-layer"></div>
                 <!-- Enemy Triangle (Top) -->
                 <div class="team-formation enemy-team">
                     <div class="triangle-row back-row">
@@ -74,10 +116,9 @@
                     <div id="battle-log">WAITING FOR ACTION...</div>
                 </div>
                 <button id="end-turn-btn" class="btn-neon hidden">END TURN</button>
+                <button id="start-action-btn" class="btn-neon hidden">ATTACK</button>
                 <!-- Ability Tooltip -->
                 <!-- HIDDEN ELEMENTS FOR DRAG -->
-                <img id="drag-attack-icon" src="Images/Swap.png"
-                    style="position: absolute; top: -1000px; width: 40px; height: 40px; pointer-events: none;">
 
                 <div id="ability-tooltip" class="tooltip hidden">
                     <h3 id="tooltip-name">Monster Name</h3>

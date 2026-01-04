@@ -13,6 +13,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const phaseMsg = document.getElementById('phase-msg');
     const phaseSubMsg = document.getElementById('phase-sub-msg');
     const endTurnBtn = document.getElementById('end-turn-btn');
+    const startActionBtn = document.getElementById('start-action-btn');
+    const databaseScreen = document.getElementById('database-screen');
+    const btnCollection = document.getElementById('btn-collection');
+    const btnDbBack = document.getElementById('btn-db-back');
 
     // Tooltip Elements
     const tooltip = document.getElementById('ability-tooltip');
@@ -120,6 +124,27 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        if (startActionBtn) {
+            startActionBtn.addEventListener('click', () => {
+                updateBattleLog("PLAYER STARTS ACTION PHASE MANUALLY");
+                endReinforcePhase();
+            });
+        }
+
+        if (btnCollection) {
+            btnCollection.addEventListener('click', () => {
+                mainMenu.classList.add('hidden');
+                databaseScreen.classList.remove('hidden');
+            });
+        }
+
+        if (btnDbBack) {
+            btnDbBack.addEventListener('click', () => {
+                databaseScreen.classList.add('hidden');
+                mainMenu.classList.remove('hidden');
+            });
+        }
+
         updateUI();
         bindSlotDropZones();
         bindEnemyDropZones();
@@ -128,48 +153,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- UTILS: SPAWN TOKENS ---
     function spawnPellicleTokens(count) {
-        const container = document.querySelector('.team-formation.player-team'); // Use Player Team area
-        if (!container) return; // Should exist
+        const layer = document.getElementById('pellicle-layer');
+        if (!layer) return;
 
-        // Clear existing tokens just in case
-        document.querySelectorAll('.pellicle-token').forEach(el => el.remove());
+        // Clear existing tokens
+        layer.innerHTML = '';
+
+        const layerWidth = layer.offsetWidth;
+        const layerHeight = layer.offsetHeight;
 
         for (let i = 0; i < count; i++) {
             const token = document.createElement('div');
             token.classList.add('pellicle-token');
             token.draggable = true;
-            token.id = `pellicle-token-${i}`; // Unique ID
+            token.style.pointerEvents = 'auto'; // Re-enable pointer events on the token itself
+            token.id = `pellicle-token-${i}`;
 
-            // SPAWN LOGIC: Asymmetric Randomness
-            // Use wider ranges and independent random checks to avoid "mirror" look.
-
-            const isLeft = (Math.random() > 0.5); // Completely random side for each token? No, might overlap.
-            // Better: Keep side separation for safety but randomize Y drastically.
+            // SPAWN POSITIONING
+            // We want tokens to appear on the left and right sides of the battlefield
+            // focusing on the bottom half where the player is.
             const side = (i % 2 === 0) ? -1 : 1; // -1 Left, 1 Right
 
-            const containerWidth = container.offsetWidth;
-            const containerHeight = container.offsetHeight;
-
             let x, y;
-
-            // X: Variation from 60px to 140px distance from edge
-            const xOffset = Math.random() * 80 + 60;
+            const xOffset = Math.random() * 60 + 40; // 40-100px from edge
 
             if (side === -1) {
-                x = -xOffset;
+                x = xOffset;
             } else {
-                x = containerWidth + xOffset - 70; // -70 for token width
+                x = layerWidth - xOffset - 70; // 70 is token width
             }
 
-            // Y: Full height randomness (10% to 90%)
-            y = Math.random() * (containerHeight * 0.8) + (containerHeight * 0.1);
+            // Y: Mostly in the bottom half (Player area)
+            // Battlefield height is roughly split 40/20/40. 
+            // We'll target 60% to 90% height range.
+            y = (layerHeight * 0.6) + (Math.random() * layerHeight * 0.3);
 
             token.style.left = `${x}px`;
             token.style.top = `${y}px`;
 
-            // RANDOM DELAY for natural feel
+            // RANDOM DELAY
             token.style.animationDelay = `${i * 0.1}s, ${0.6 + Math.random() * 0.5}s`;
-            // 1st time is for spawn, 2nd is for float start offset (approx)
 
             // DRAG EVENTS
             token.addEventListener('dragstart', (e) => {
@@ -190,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // If consumed, it is removed in drop handler
             });
 
-            container.appendChild(token);
+            layer.appendChild(token);
         }
     }
 
@@ -362,9 +385,6 @@ document.addEventListener('DOMContentLoaded', () => {
             pelliclePool--;
             triggerExplosion(playerTeam, index);
 
-            if (pelliclePool === 0) {
-                endReinforcePhase();
-            }
             return;
         }
 
@@ -384,9 +404,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log(`Reinforced ${monster.name}${isCano ? " (Synergy!)" : ""}. Pool: ${pelliclePool}`);
             updateBattleLog(`${monster.name} ABSORBS PELLICLE${isCano ? " (ROOT SYNERGY)" : ""}`);
 
-            if (pelliclePool === 0) {
-                endReinforcePhase();
-            }
         } else if (monster.isDead) {
             showGameMessage("Dead monsters cannot be reinforced!", "red");
         } else {
@@ -461,7 +478,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (monster.pellicle + 1 >= 6) { // Enemy always gains 1 pellicle from drag
             pelliclePool--;
             triggerExplosion(enemyTeam, index);
-            if (pelliclePool === 0) endReinforcePhase();
             return;
         }
 
@@ -485,7 +501,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             pelliclePool--;
             console.log(`Pumping ${monster.name}. Pool: ${pelliclePool}`);
-            if (pelliclePool === 0) endReinforcePhase();
         } else if (monster.isDead) {
             showGameMessage("Cannot pump a dead cell!", "red");
         } else {
@@ -524,20 +539,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         e.dataTransfer.effectAllowed = 'copyMove';
 
-        // CUSTOM ATTACK DRAG IMAGE (Using pre-sized DOM element)
-        if (currentPhase === 'ACTION') {
-            // TURN 1 RESTRICTION: ACCLIMATIZATION
-            if (turnNumber === 1) {
-                e.preventDefault();
-                showGameMessage("Acclimatization: Actions disabled Turn 1", "blue");
-                return;
-            }
-
-            if (attackDragIcon) {
-                e.dataTransfer.setDragImage(attackDragIcon, 20, 20);
-            }
-        }
-
         const dragType = isTransfer ? 'type:transfer' : 'type:monster';
         e.dataTransfer.setData('text/plain', `${dragType};index:${index}`);
 
@@ -560,6 +561,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Restore pointer events
         document.querySelectorAll('.monster').forEach(m => m.style.pointerEvents = 'auto');
+        clearActionIndicators();
     }
 
     // C. GENERIC DROP HANDLERS
@@ -572,16 +574,28 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isAITurn) return;
         e.preventDefault();
         e.currentTarget.classList.add('drag-over');
+
+        // Show Swap indicator if dragging a monster over a player slot (Action Phase only)
+        if (currentPhase === 'ACTION' && isDraggingPlayerFlag && !e.currentTarget.classList.contains('vanguard') && !e.currentTarget.classList.contains('wing')) {
+            // Check if it's a player slot by team-formation parent
+            if (e.currentTarget.closest('.player-team')) {
+                showActionIndicator(e.currentTarget, 'swap');
+            }
+        } else if (currentPhase === 'ACTION' && isDraggingPlayerFlag && e.currentTarget.closest('.player-team')) {
+            showActionIndicator(e.currentTarget, 'swap');
+        }
     }
     function handleDragLeave(e) {
         if (isAITurn) return;
         e.currentTarget.classList.remove('drag-over');
+        clearActionIndicators(e.currentTarget);
     }
 
     // DROP ON PLAYER SLOT
     function handleDropPlayerSlot(e, targetIndex) {
         e.preventDefault();
         e.currentTarget.classList.remove('drag-over');
+        clearActionIndicators(e.currentTarget);
 
         if (isAITurn) return;
 
@@ -652,10 +666,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 playerTeam[targetIndex] = temp;
 
                 renderFormation();
-                // RULE: MOVE ENDS TURN
                 setTimeout(() => {
                     updateBattleLog(`${source.name} SWAPS WITH ${target.name}`);
-                    endTurn();
                 }, 100);
             }
         }
@@ -665,6 +677,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleDropEnemySlot(e, enemyIndex) {
         e.preventDefault();
         e.currentTarget.classList.remove('target-lock');
+        clearActionIndicators(e.currentTarget);
 
         if (isAITurn) return;
 
@@ -769,8 +782,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             updateBattleLog(`${attacker.name} FIRES BALLISTIC VOLLEY (${count} SHOTS)`);
 
-            // End turn after last shot sequence + buffer
-            setTimeout(() => endTurn(), (count * 80) + 600);
             return;
         }
 
@@ -793,7 +804,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             renderEnemyFormation();
-            setTimeout(() => endTurn(), 500);
         });
     }
 
@@ -899,6 +909,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 phaseSubMsg.innerText = isAITurn ? "COMPUTER IS PREPARING..." : "DRAG PELLICLE TO REINFORCE";
                 if (reinforceZone) reinforceZone.classList.remove('disabled');
                 if (endTurnBtn) endTurnBtn.classList.add('hidden');
+
+                // Show manual action button only during Player Reinforce phase
+                if (startActionBtn) {
+                    if (!isAITurn) startActionBtn.classList.remove('hidden');
+                    else startActionBtn.classList.add('hidden');
+                }
             } else {
                 // ACTION PHASE
                 if (turnNumber === 1 && !isAITurn) {
@@ -914,6 +930,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (reinforceZone) reinforceZone.classList.add('disabled');
+                if (startActionBtn) startActionBtn.classList.add('hidden');
 
                 // Show manual end turn button only during Player Action phase
                 if (endTurnBtn) {
@@ -966,6 +983,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // VISUAL FEEDBACK: Target Lock
         el.classList.add('target-lock');
 
+        // Show Attack indicator if dragging a monster over an enemy slot
+        if (isDraggingPlayerFlag || (draggedIndex !== null && currentPhase === 'ACTION')) {
+            showActionIndicator(el, 'attack');
+        }
+
         // VISUAL FEEDBACK: Invalid Target (Red X)
         const isAttackerDragging = isDraggingPlayerFlag || (draggedIndex !== null && currentPhase === 'ACTION');
 
@@ -1004,6 +1026,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleDragLeaveEnemy(el, e) {
         el.classList.remove('target-lock', 'invalid-target');
+        clearActionIndicators(el);
     }
 
     function bindEnemyDropZones() {
@@ -1298,6 +1321,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if (index === 1) return container.querySelector('.wing[data-pos="wing-left"]');
         if (index === 2) return container.querySelector('.wing[data-pos="wing-right"]');
         return null;
+    }
+
+    function showActionIndicator(slot, type) {
+        // Clear existing in this slot
+        clearActionIndicators(slot);
+
+        const indicator = document.createElement('div');
+        indicator.classList.add('action-indicator', type);
+        slot.appendChild(indicator);
+    }
+
+    function clearActionIndicators(slot = null) {
+        if (slot) {
+            const indicators = slot.querySelectorAll('.action-indicator');
+            indicators.forEach(ind => ind.remove());
+        } else {
+            const allIndicators = document.querySelectorAll('.action-indicator');
+            allIndicators.forEach(ind => ind.remove());
+        }
     }
 
     function showGameMessage(text, colorType) {

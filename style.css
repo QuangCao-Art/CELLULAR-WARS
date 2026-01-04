@@ -120,6 +120,19 @@ body {
     justify-content: center;
     align-items: center;
     perspective: 1000px;
+    position: relative;
+    /* Stability for absolute layers */
+}
+
+#pellicle-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    /* Let clicks pass to monsters/slots */
+    z-index: 100;
 }
 
 /* PELLICLE TOKEN ANIMATIONS */
@@ -606,7 +619,8 @@ body {
     /* Allow button clicks */
 }
 
-#end-turn-btn {
+#end-turn-btn,
+#start-action-btn {
     position: absolute;
     bottom: 60px;
     /* Above battle log */
@@ -619,8 +633,28 @@ body {
     z-index: 1000;
 }
 
+#end-turn-btn {
+    border-color: var(--neon-green);
+    color: var(--neon-green);
+    box-shadow: 0 0 10px var(--neon-green), inset 0 0 10px var(--neon-green);
+}
+
 #end-turn-btn:hover {
-    box-shadow: 0 0 20px var(--neon-blue);
+    box-shadow: 0 0 20px var(--neon-green) !important;
+    background: var(--neon-green);
+    color: #000;
+}
+
+#start-action-btn {
+    border-color: var(--neon-red);
+    color: var(--neon-red);
+    box-shadow: 0 0 10px var(--neon-red), inset 0 0 10px var(--neon-red);
+}
+
+#start-action-btn:hover {
+    box-shadow: 0 0 20px var(--neon-red) !important;
+    background: var(--neon-red);
+    color: #000;
 }
 
 .phase-display {
@@ -693,6 +727,51 @@ body {
 
     to {
         box-shadow: 0 0 30px var(--neon-red);
+    }
+}
+
+/* NEW: Action Indicators (Attack/Swap) inside Slots */
+.action-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    z-index: 150;
+    /* Above monster */
+    pointer-events: none;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    animation: indicator-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.5));
+}
+
+.action-indicator.attack {
+    background-image: url('Images/Attack.png');
+    filter: drop-shadow(0 0 15px var(--neon-red));
+}
+
+.action-indicator.swap {
+    background-image: url('Images/Swap.png');
+    filter: drop-shadow(0 0 15px var(--neon-blue));
+}
+
+@keyframes indicator-pop {
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+    }
+
+    70% {
+        transform: translate(-50%, -50%) scale(1.2);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
     }
 }
 
@@ -832,4 +911,130 @@ body {
         transform: scale(1);
         letter-spacing: 1px;
     }
+}
+
+/* DATABASE SCREEN */
+#database-screen {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    align-items: center;
+    background: radial-gradient(circle at center, #0a152a 0%, #050a14 100%);
+    overflow: hidden;
+}
+
+.screen-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.database-container {
+    width: 100%;
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.db-section {
+    background: var(--glass-panel);
+    border: 1px solid rgba(0, 243, 255, 0.2);
+    padding: 20px;
+    border-radius: 10px;
+    width: 100%;
+}
+
+.db-section h3 {
+    margin-top: 0;
+    color: var(--neon-blue);
+    font-family: 'Orbitron', sans-serif;
+    border-bottom: 2px solid var(--neon-blue);
+    display: inline-block;
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+}
+
+.db-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.db-list li {
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+    position: relative;
+    padding-left: 20px;
+}
+
+.db-list li::before {
+    content: '>';
+    position: absolute;
+    left: 0;
+    color: var(--neon-green);
+}
+
+.monster-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.db-monster-card {
+    text-align: center;
+    padding: 15px 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.db-monster-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.07);
+    border-color: var(--neon-green);
+    box-shadow: 0 5px 15px rgba(10, 255, 0, 0.2);
+}
+
+.db-monster-card img {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 0 5px rgba(0, 243, 255, 0.3));
+}
+
+.db-monster-card h4 {
+    margin: 5px 0;
+    color: var(--neon-green);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+}
+
+.db-monster-card p {
+    font-size: 0.85rem;
+    line-height: 1.3;
+    margin: 0;
+    color: #ccc;
+}
+
+/* Custom Scrollbar for DB */
+.database-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.database-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.database-container::-webkit-scrollbar-thumb {
+    background: var(--neon-blue);
+    border-radius: 10px;
+}
+
+.database-container::-webkit-scrollbar-thumb:hover {
+    background: var(--neon-green);
 }
