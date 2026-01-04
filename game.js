@@ -141,8 +141,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (startActionBtn) {
         startActionBtn.addEventListener('click', () => {
             if (isGameOver) return;
-            updateBattleLog("PLAYER STARTS ACTION PHASE MANUALLY");
-            endReinforcePhase();
+
+            if (turnNumber === 1) {
+                // Skip Action Phase directly to End Turn (Silent & Immediate)
+                endReinforcePhase(); // Transition state
+                endTurn();
+            } else {
+                updateBattleLog("PLAYER STARTS ACTION PHASE MANUALLY");
+                endReinforcePhase();
+            }
         });
     }
 
@@ -360,15 +367,16 @@ document.addEventListener('DOMContentLoaded', () => {
         runAIAction();
     }
 
-    function runAIReinforce() {
-        // AI simple reinforcement logic: Give to Vanguard if low, else random
+    async function runAIReinforce() {
+        // AI - VISUAL REINFORCEMENT LOGIC
         let availablePP = REINFORCE_AMOUNT;
-        const livingEnemies = enemyTeam.filter(m => !m.isDead);
 
-        if (livingEnemies.length === 0) return;
+        // Loop with delay for animation
+        for (let i = 0; i < availablePP; i++) {
+            const livingEnemies = enemyTeam.filter(m => !m.isDead);
+            if (livingEnemies.length === 0) break;
 
-        while (availablePP > 0) {
-            // Priority: Vanguard (index 0) if has less than 3 Pellicles
+            // AI LOGIC: Priority Vanguard (0) < 3, else Random
             let target;
             const vanguard = enemyTeam[0];
             if (!vanguard.isDead && vanguard.pellicle < 3) {
@@ -378,13 +386,53 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (target.pellicle < target.max) {
-                const gain = target.id.includes('cano') ? 2 : 1;
-                target.pellicle += gain;
-                updateBattleLog(`AI: ${target.name} absorbs Pellicle`);
-                triggerVisualEffect(enemyTeam.indexOf(target), false, 'power-up');
-                availablePP--;
+                const targetIndex = enemyTeam.indexOf(target);
+
+                // 1. CREATE GHOST TOKEN (Visual Only)
+                const ghostToken = document.createElement('div');
+                ghostToken.classList.add('pellicle-token');
+
+                // CRITICAL FIX: Disable CSS "falling" animation immediately
+                ghostToken.style.animation = 'none';
+
+                // FORCE FIXED POSITIONING with EXPLICIT PIXELS
+                // Calculate start position: Top Center, Off-screen
+                const startX = window.innerWidth / 2;
+                const startY = -100; // 100px above screen
+
+                ghostToken.style.position = 'fixed';
+                ghostToken.style.left = `${startX}px`;
+                ghostToken.style.top = `${startY}px`;
+                ghostToken.style.zIndex = '10000';
+
+                document.body.appendChild(ghostToken);
+
+                // 2. WAIT FOR ANIMATION
+                await new Promise(resolve => {
+                    animatePellicleToMonster(ghostToken, targetIndex, () => {
+                        // 3. APPLY EFFECT ON ARRIVAL
+                        const gain = target.id.includes('cano') ? 2 : 1; // AI Cano Bonus? Logic implies 1 per loop usually but keep existing rule
+                        // Actually loop is 1 by 1, so existing logic `target.pellicle += gain` might over-pump if gain is 2. 
+                        // But `availablePP` counts down by 1. Keep consistent with previous logic.
+                        // Previous logic: `target.pellicle += gain; availablePP--` 
+                        // Logic check: if `gain` is 2, does it cost 1 PP from pool? Yes in previous code.
+                        // So AI gets free extra point? Yes. Preserving that behavior.
+
+                        target.pellicle += gain;
+                        if (target.pellicle > target.max) target.pellicle = target.max;
+
+                        updateBattleLog(`AI: ${target.name} absorbs Pellicle`);
+                        triggerVisualEffect(targetIndex, false, 'power-up');
+                        renderEnemyFormation();
+                        resolve();
+                    }, false); // isPlayer = false
+                });
             } else {
-                // If everyone's full or randomized into a full one, break to avoid infinite loop
+                // Optimization: If picked full target, try one more random pick or just skip to save time?
+                // Simple: just skip iteration effectively wasting a "thought" but conserving PP? 
+                // Previous code broke loop. Let's just break for safety or continue to try finding another.
+                // Better: Filter for non-full enemies at start of loop? 
+                // To keep it simple and robust like before:
                 break;
             }
         }
@@ -495,14 +543,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // SPLASH DAMAGE
                 let neighbors = (victimIdx === 0) ? [1, 2] : [0];
-                neighbors.forEach(nIdx => {
-                    const neighbor = playerTeam[nIdx];
-                    if (!neighbor.isDead) resolveHit(neighbor, nIdx, playerTeam);
-                });
+                const splashIdx = getBestSplashTarget(neighbors, playerTeam);
+
+                if (splashIdx !== null) {
+                    const neighbor = playerTeam[splashIdx];
+                    // Visual Shrapnel from Victim (Player) -> Neighbor (Player)
+                    const sourceSlot = getSlotElement(victimIdx, true);
+                    const targetSlot = getSlotElement(splashIdx, true);
+
+                    triggerShrapnel(sourceSlot, targetSlot, () => {
+                        resolveHit(neighbor, splashIdx, playerTeam, null, -1, null, 'heavy', 'splash-impact');
+                        updateBattleLog(`AI SPLASH hits ${neighbor.name}!`);
+                        renderFormation(); // Re-render player team
+                    });
+                }
 
                 renderFormation();
                 setTimeout(() => endTurn(), 1000);
-            }, 200);
+            }, 200, 'nitro');
             return;
         }
 
@@ -552,14 +610,29 @@ document.addEventListener('DOMContentLoaded', () => {
             monster.pellicle += gainAmount;
             pelliclePool--;
 
-            // REMOVE TOKEN VISUALLY IMMEDIATELY
+            // ANIMATE TOKEN FLYING TO MONSTER
             if (tokenId) {
                 const tokenEl = document.getElementById(tokenId);
-                if (tokenEl) tokenEl.remove();
+                console.log(`Trying to animate token: ${tokenId}, found:`, tokenEl);
+                if (tokenEl) {
+                    console.log('Animating pellicle to monster index:', index);
+                    animatePellicleToMonster(tokenEl, index, () => {
+                        // POWER UP EFFECT after animation
+                        triggerVisualEffect(index, true, 'power-up');
+                        renderFormation();
+                    });
+                } else {
+                    console.log('Token not found by ID, showing immediate effect');
+                    // Fallback if token not found
+                    triggerVisualEffect(index, true, 'power-up');
+                    renderFormation();
+                }
+            } else {
+                console.log('No token ID provided (touch drag?), showing immediate effect');
+                // No token ID (e.g., touch drag), just show effect
+                triggerVisualEffect(index, true, 'power-up');
+                renderFormation();
             }
-
-            // POWER UP EFFECT
-            triggerVisualEffect(index, true, 'power-up');
 
             console.log(`Reinforced ${monster.name}${isCano ? " (Synergy!)" : ""}. Pool: ${pelliclePool}`);
             updateBattleLog(`${monster.name} ABSORBS PELLICLE${isCano ? " (ROOT SYNERGY)" : ""}`);
@@ -570,11 +643,64 @@ document.addEventListener('DOMContentLoaded', () => {
             showGameMessage("Max Pellicles reached!", "blue");
         }
 
-
-
-        renderFormation();
         updateTurnIndicator();
         updatePhaseUI();
+    }
+
+    function animatePellicleToMonster(tokenEl, monsterIndex, onComplete, isPlayerAndTarget = true) {
+        console.log('animatePellicleToMonster called for monster index:', monsterIndex);
+
+        // FORCE REFLOW IMMEDIATELY to ensure start position is rendered
+        void tokenEl.offsetWidth;
+
+        // Get monster position
+        const slot = getSlotElement(monsterIndex, isPlayerAndTarget);
+        if (!slot) {
+            console.log('Slot not found for monster index:', monsterIndex);
+            tokenEl.remove();
+            if (onComplete) onComplete();
+            return;
+        }
+
+        const monsterRect = slot.getBoundingClientRect();
+        const tokenRect = tokenEl.getBoundingClientRect();
+
+        console.log('Monster rect:', monsterRect);
+        console.log('Token rect:', tokenRect);
+
+        // Calculate target position (center of monster)
+        const targetX = monsterRect.left + monsterRect.width / 2;
+        const targetY = monsterRect.top + monsterRect.height / 2;
+
+        // Calculate current position
+        const startX = tokenRect.left + tokenRect.width / 2;
+        const startY = tokenRect.top + tokenRect.height / 2;
+
+        const deltaX = targetX - startX;
+        const deltaY = targetY - startY;
+
+        console.log(`Animating from (${startX}, ${startY}) to (${targetX}, ${targetY}), delta: (${deltaX}, ${deltaY})`);
+
+        // disable CSS animation to prevent conflict with transform
+        tokenEl.style.animation = 'none';
+        // Force reflow
+        void tokenEl.offsetWidth;
+
+        // Make token highly visible and animate
+        tokenEl.style.zIndex = '10000'; // Bring to front
+        tokenEl.style.transition = 'all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        tokenEl.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(0.3)`;
+        tokenEl.style.opacity = '1';
+        tokenEl.style.filter = 'brightness(2) drop-shadow(0 0 20px var(--neon-green))';
+
+        console.log('Animation started, will complete in 600ms');
+
+        // Remove after animation
+        setTimeout(() => {
+            console.log('Animation complete, removing token');
+            tokenEl.remove();
+            if (onComplete) onComplete();
+        }, 600);
     }
 
     function triggerExplosion(team, index) {
@@ -965,6 +1091,8 @@ document.addEventListener('DOMContentLoaded', () => {
         attacker.attackCount++; // Increment counter
         renderFormation();
 
+        const visualType = attacker.id.includes('nitro') ? 'nitro' : 'standard';
+
         triggerProjectile(attackerIndex, victimIndex, true, () => {
             updateBattleLog(`${attacker.name} USES ${attacker.id.includes('nitro') ? 'NITRO BLAST' : 'HYDRO SHOT'}!`);
             resolveHit(victim, victimIndex, enemyTeam, attacker, attackerIndex, playerTeam);
@@ -972,35 +1100,61 @@ document.addEventListener('DOMContentLoaded', () => {
             // NITRO SPLASH (Nitro Blast Ability)
             if (attacker.id.includes('nitro')) {
                 let neighbors = (victimIndex === 0) ? [1, 2] : [0];
-                neighbors.forEach(nIdx => {
-                    const neighbor = enemyTeam[nIdx];
-                    if (!neighbor.isDead) resolveHit(neighbor, nIdx, enemyTeam);
-                });
+                const splashIdx = getBestSplashTarget(neighbors, enemyTeam);
+                if (splashIdx !== null) {
+                    const neighbor = enemyTeam[splashIdx];
+                    // Visual Shrapnel from Victim -> Neighbor
+                    const sourceSlot = getSlotElement(victimIndex, false); // Enemy Main Victim
+                    const targetSlot = getSlotElement(splashIdx, false);   // Enemy Neighbor
+
+                    triggerShrapnel(sourceSlot, targetSlot, () => {
+                        resolveHit(neighbor, splashIdx, enemyTeam, null, -1, null, 'heavy', 'splash-impact');
+                        updateBattleLog(`SPLASH hits ${neighbor.name}!`);
+                        renderEnemyFormation(); // Re-render to show damage
+                    });
+                }
             }
 
             renderEnemyFormation();
             renderFormation();
             checkGameOver();
-        }, 200); // Ability single attacks are now slower (200ms)
+        }, 200, visualType); // Pass special visual type
 
         actionTaken = true; // Mark action as taken
         updatePhaseUI();
     }
 
-    function triggerProjectile(attackerIndex, victimIndex, isPlayerAttacking, onHit, duration = 100) {
-        const sourceSlot = getSlotElement(attackerIndex, isPlayerAttacking);
-        const targetSlot = getSlotElement(victimIndex, !isPlayerAttacking);
+    function triggerProjectile(attackerIndex, victimIndex, isPlayerAttacking, onHit, duration = 100, visualType = 'standard') {
+        const attackerSlot = getSlotElement(attackerIndex, isPlayerAttacking);
+        const victimSlot = getSlotElement(victimIndex, !isPlayerAttacking);
 
-        if (!sourceSlot || !targetSlot) return;
+        if (!attackerSlot || !victimSlot) {
+            console.warn("Projectile Aborted: Missing Slot.");
+            if (onHit) onHit();
+            return;
+        }
 
-        const sourceRect = sourceSlot.getBoundingClientRect();
-        const targetRect = targetSlot.getBoundingClientRect();
+        const sourceRect = attackerSlot.getBoundingClientRect();
+        const targetRect = victimSlot.getBoundingClientRect();
 
         const bullet = document.createElement('div');
         bullet.classList.add('projectile');
-        const img = document.createElement('img');
-        img.src = 'Images/Bullet.png';
-        bullet.appendChild(img);
+
+        // Custom visual logic
+        if (visualType === 'nitro') {
+            bullet.classList.add('nitro-blast');
+            // Maybe no image, just pure CSS energy ball? Or filter the bullet?
+            // Let's keep the image but colorize it via CSS filter
+            const img = document.createElement('img');
+            img.src = 'Images/Bullet.png';
+            bullet.appendChild(img);
+        } else {
+            const img = document.createElement('img');
+            img.src = 'Images/Bullet.png';
+            bullet.appendChild(img);
+        }
+
+        // Start position
 
         // Start position
         bullet.style.left = (sourceRect.left + sourceRect.width / 2 - 20) + 'px';
@@ -1022,13 +1176,64 @@ document.addEventListener('DOMContentLoaded', () => {
         }, duration);
     }
 
-    function resolveHit(victim, victimIndex, team, attacker = null, attackerIndex = -1, attackerTeam = null, hitType = 'heavy') {
+    function triggerShrapnel(sourceSlot, targetSlot, onHit) {
+        if (!sourceSlot || !targetSlot) {
+            console.warn("Shrapnel Aborted: Missing Slot. Source:", sourceSlot, "Target:", targetSlot);
+            if (onHit) onHit(); // FAIL-SAFE: Ensure damage happens even if visual fails
+            return;
+        }
+
+        const sourceRect = sourceSlot.getBoundingClientRect();
+        const targetRect = targetSlot.getBoundingClientRect();
+
+        const shrapnel = document.createElement('div');
+        shrapnel.classList.add('projectile', 'shrapnel');
+        shrapnel.style.position = 'fixed'; // FIXED positioning for viewport coordinates
+
+        // Reuse projectile image or a specific fragment
+        const img = document.createElement('img');
+        img.src = 'Images/Bullet.png'; // Corrected path
+        shrapnel.appendChild(img);
+
+        document.body.appendChild(shrapnel);
+
+        // Start at Source Center
+        const startX = sourceRect.left + (sourceRect.width / 2) - 15;
+        const startY = sourceRect.top + (sourceRect.height / 2) - 15;
+
+        shrapnel.style.left = `${startX}px`;
+        shrapnel.style.top = `${startY}px`;
+
+        // Force reflow
+        void shrapnel.offsetWidth;
+
+        // Custom duration - Visible Speed
+        const duration = 300;
+        shrapnel.style.transition = `transform ${duration / 1000}s linear`;
+
+        // End position calculation is strictly geometric difference
+        const deltaX = (targetRect.left + targetRect.width / 2) - (sourceRect.left + sourceRect.width / 2);
+        const deltaY = (targetRect.top + targetRect.height / 2) - (sourceRect.top + sourceRect.height / 2);
+
+        shrapnel.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+
+        setTimeout(() => {
+            shrapnel.remove();
+            if (onHit) onHit();
+        }, duration);
+    }
+
+    function resolveHit(victim, victimIndex, team, attacker = null, attackerIndex = -1, attackerTeam = null, hitType = 'heavy', visualEffectOverride = null) {
         if (victim.isDead) return;
 
         // VISUAL EFFECTS ON HIT (Standardized: All hits trigger Flash + Shake)
-        // Ignoring hitType 'light' request for damage to ensure "Hit Effect" consistency
-        triggerVisualEffect(victimIndex, (team === playerTeam), 'hit-flash');
-        triggerScreenShake();
+        // Allowing override for Splash etc.
+        const effectName = visualEffectOverride || 'hit-flash';
+        triggerVisualEffect(victimIndex, (team === playerTeam), effectName);
+
+        if (!visualEffectOverride) triggerScreenShake(); // Only shake on main hits? Or all? Let's keep shake for main only maybe?
+        // Actually splash should probably not shake screen 3 times.
+        if (!visualEffectOverride) triggerScreenShake();
 
         // A. REACTIVE MEMBRANE (Nitrophil Passive)
         let reflectDamage = false;
@@ -1130,11 +1335,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (reinforceZone) reinforceZone.classList.remove('disabled');
                 if (endTurnBtn) endTurnBtn.classList.add('hidden');
 
-                // Show manual action button only during Player Reinforce phase
-                if (startActionBtn) {
-                    if (!isAITurn) startActionBtn.classList.remove('hidden');
-                    else startActionBtn.classList.add('hidden');
-                }
+                if (reinforceZone) reinforceZone.classList.remove('disabled');
+                if (endTurnBtn) endTurnBtn.classList.add('hidden');
             } else {
                 // ACTION PHASE
                 if (turnNumber === 1 && !isAITurn) {
@@ -1164,6 +1366,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (endTurnBtn) {
                     if (!isAITurn) endTurnBtn.classList.remove('hidden');
                     else endTurnBtn.classList.add('hidden');
+                }
+            }
+        }
+
+        // ALWAYS UPDATE DYNAMIC BUTTONS (Outside the phase change check)
+        // ALWAYS UPDATE DYNAMIC BUTTONS (Outside the phase change check)
+        if (currentPhase === 'REINFORCE') {
+            if (startActionBtn) {
+                if (!isAITurn) {
+                    startActionBtn.classList.remove('hidden');
+
+                    if (turnNumber === 1) {
+                        // Turn 1: Acclimatization -> END TURN (Cyan)
+                        const btnText = "End Turn (Acclimatization)";
+                        if (startActionBtn.innerText !== btnText) startActionBtn.innerText = btnText;
+
+                        startActionBtn.style.color = "var(--neon-blue)";
+                        startActionBtn.style.borderColor = "var(--neon-blue)";
+                        startActionBtn.style.boxShadow = "0 0 10px var(--neon-blue), inset 0 0 10px var(--neon-blue)";
+                    } else {
+                        // Turn 2+: Normal Attack (Red)
+                        const btnText = "ATTACK";
+                        if (startActionBtn.innerText !== btnText) startActionBtn.innerText = btnText;
+
+                        startActionBtn.style.color = "var(--neon-red)";
+                        startActionBtn.style.borderColor = "var(--neon-red)";
+                        startActionBtn.style.boxShadow = "0 0 10px var(--neon-red), inset 0 0 10px var(--neon-red)";
+                    }
+
+                } else {
+                    startActionBtn.classList.add('hidden');
                 }
             }
         }
@@ -1384,6 +1617,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // ABILITY GLOW STATE (Only for Player)
         if (isPlayer && index === selectedAbilitySourceIndex) {
             div.classList.add('ability-active');
+        }
+
+        // VULNERABLE STATE (0 Pellicles)
+        if (monster.pellicle === 0 && !monster.isDead) {
+            div.classList.add('vulnerable');
         }
 
         // ID for specific styling if needed
@@ -1672,9 +1910,8 @@ document.addEventListener('DOMContentLoaded', () => {
             isDraggingPellicleFlag = true;
             isDraggingPlayerFlag = false;
 
-            // Store token reference and hide it
+            // Store token reference but keep it visible
             touchedToken = target;
-            touchedToken.style.opacity = '0.3';
             touchedToken.style.pointerEvents = 'none';
 
             createTouchGhost(target, touch);
@@ -1686,6 +1923,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         touchGhost = source.cloneNode(true);
         touchGhost.classList.add('touch-drag-ghost');
+
+        // Remove all animations from the ghost
+        touchGhost.style.animation = 'none';
+        touchGhost.style.animationDelay = '0s';
+
+        // Position at touch point (centered on finger)
         touchGhost.style.left = touch.clientX + 'px';
         touchGhost.style.top = touch.clientY + 'px';
 
@@ -1764,10 +2007,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 handleDropPlayerSlot(mockEvent, targetIndex);
 
-                // Remove the touched token if drop was successful
-                if (isDraggingPellicleFlag && touchedToken) {
-                    touchedToken.remove();
-                }
+                // Don't animate here - let addPellicleFromDrag handle it
+                // Just clean up the reference
+                touchedToken = null;
             } else if (isEnemySlot) {
                 const mockEvent = {
                     preventDefault: () => { },
@@ -1800,6 +2042,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INTEGRATION: Adding touch listeners to elements ---
     // Modified createMonsterDOM and spawnPellicleTokens to include touch listeners
+
+    function getBestSplashTarget(neighborIndices, team) {
+        // 1. Filter Alive Neighbors
+        let candidates = neighborIndices.map(idx => ({ index: idx, monster: team[idx] }))
+            .filter(c => !c.monster.isDead);
+
+
+        if (candidates.length === 0) return null;
+
+        // 2. Find Max PP
+        const maxPP = Math.max(...candidates.map(c => c.monster.pellicle));
+
+        // 3. Filter for Top Contenders (Ties)
+        const topContenders = candidates.filter(c => c.monster.pellicle === maxPP);
+
+        // 4. Pick Random from Top Contenders
+        const choice = topContenders[Math.floor(Math.random() * topContenders.length)];
+        return choice.index;
+    }
 
     console.log("CELLULAR WARS: Robust System Ready v0.9 (Mobile Support Enabled)");
 });
