@@ -593,6 +593,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentPhase !== 'REINFORCE' || pelliclePool <= 0) return;
 
         const monster = playerTeam[index];
+        console.log(`[REINFORCE] Target: ${monster.name}, Current P: ${monster.pellicle}, Max: ${monster.max}`);
 
         // CHECK OVERLOAD (6th point)
         const isCano = monster.id.includes('cano');
@@ -891,6 +892,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const rawData = e.dataTransfer.getData('text/plain');
 
         if (rawData && rawData.includes('type:pellicle')) {
+            console.log(`[DROP] Pellicle dropped on Slot ${targetIndex}`);
             // Extact Token ID to remove it
             const tokenId = rawData.split('id:')[1];
             addPellicleFromDrag(targetIndex, tokenId); // Pass token ID
@@ -1284,7 +1286,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (enemyWipe) {
             isGameOver = true;
-            showGameOverEffect("DIVISION COMPLETE", "var(--neon-green)");
+            showGameOverEffect("DIVISION SUCCESS", "var(--neon-green)");
         } else if (playerWipe) {
             isGameOver = true;
             showGameOverEffect("DIVISION FAILURE", "var(--neon-red)");
@@ -1292,24 +1294,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showGameOverEffect(message, color) {
-        // 1. UPDATE PHASE UI
-        phaseMsg.innerText = message;
-        phaseMsg.style.color = color;
-        phaseMsg.style.textShadow = `0 0 10px ${color}, 0 0 20px ${color}`;
-        phaseSubMsg.innerText = "RETURNING TO BASE...";
-        phaseSubMsg.classList.remove('exhausted');
+        const battlefield = document.querySelector('.battlefield');
+        const overlay = document.getElementById('game-over-overlay');
+        const overlayMsg = document.getElementById('game-over-msg');
 
-        // Hide buttons
+        // 1. APPLY BLUR TO BACKGROUND
+        if (battlefield) battlefield.classList.add('blur-focus');
+
+        // 2. CONFIGURE OVERLAY
+        if (overlay && overlayMsg) {
+            overlayMsg.innerText = message;
+            overlayMsg.className = (message === "DIVISION COMPLETE" || message === "DIVISION SUCCESS") ? "success" : "failure";
+            overlay.classList.remove('hidden');
+        }
+
+        // 3. UI CLEANUP
         if (endTurnBtn) endTurnBtn.classList.add('hidden');
         if (startActionBtn) startActionBtn.classList.add('hidden');
 
-        // 2. DELAYED RETURN TO MENU
+        // 4. DELAYED RETURN TO MENU (Extended to 4s for impact)
         setTimeout(() => {
+            // Clean up for next run
+            if (battlefield) battlefield.classList.remove('blur-focus');
+            if (overlay) overlay.classList.add('hidden');
+
             gameBoard.classList.add('hidden');
             mainMenu.classList.remove('hidden');
-            // reset state for next game?
-            // we probably need a reset function if we want to play again without refreshing
-        }, 3000);
+
+            // Note: resetGameState is called when clicking START, 
+            // but we can also do it here if needed for absolute freshness.
+        }, 4000);
     }
 
     // --- VISUAL RENDERING SYSTEM ---

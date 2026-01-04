@@ -917,6 +917,92 @@ body {
     filter: drop-shadow(0 0 15px var(--neon-blue));
 }
 
+/* GAME OVER SEQUENCE */
+.blur-focus {
+    filter: blur(8px) grayscale(40%);
+    transition: filter 1.5s ease;
+}
+
+#game-over-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 5000;
+    animation: overlay-fade-in 0.8s ease-out forwards;
+}
+
+.overlay-content {
+    text-align: center;
+    perspective: 1000px;
+}
+
+#game-over-msg {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 3.5rem;
+    font-weight: 900;
+    margin: 0;
+    letter-spacing: 8px;
+    animation: text-surge 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    text-transform: uppercase;
+}
+
+#game-over-overlay p {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: 5px;
+    margin-top: 20px;
+    opacity: 0;
+    animation: fade-in 0.5s ease-out 1s forwards;
+    text-transform: uppercase;
+}
+
+/* Success/Failure variants */
+#game-over-msg.success {
+    color: var(--neon-green);
+    text-shadow: 0 0 20px var(--neon-green), 0 0 40px var(--neon-green);
+}
+
+#game-over-msg.failure {
+    color: var(--neon-red);
+    text-shadow: 0 0 20px var(--neon-red), 0 0 40px var(--neon-red);
+}
+
+@keyframes overlay-fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes text-surge {
+    0% {
+        transform: scale(0.5) translateZ(-500px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1) translateZ(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fade-in {
+    to {
+        opacity: 1;
+    }
+}
+
 @keyframes indicator-pop {
     0% {
         transform: translate(-50%, -50%) scale(0);
