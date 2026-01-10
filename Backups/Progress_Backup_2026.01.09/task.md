@@ -1,0 +1,58 @@
+# Task: Polish Monster Attack Visuals
+- [x] Polish Nitrophil "Nitro Blast" Visuals (Explosive/Splash Effect) - Refined Single Target Logic <!-- id: 16 -->
+    - [x] Fix AI `victimIndex` typo and turn freeze <!-- id: 19 -->
+    - [x] Fix Shrapnel image path and viewport positioning <!-- id: 20 -->
+    - [x] Implement visual fail-safes for all projectiles <!-- id: 21 -->
+- [x] Polish Lydrosome "Hydro Shot" Visuals <!-- id: 17 -->
+    - [x] Create `.hydro-shot` CSS style (Cyan stream + Bubbles) <!-- id: 34 -->
+    - [x] Create `.osmotic-orb` CSS style (Soft Blue transfer) <!-- id: 37 -->
+    - [x] Update `triggerProjectile` to handle 'hydro' and 'osmotic' types <!-- id: 35 -->
+    - [x] Link Player Input & AI Logic to use 'hydro' visual <!-- id: 36 -->
+    - [x] Link "Osmotic Flow" logic to use 'osmotic' visual <!-- id: 38 -->
+    - [x] FIXED: Lydrosome "Hydro Shot" no longer triggers Nitro Blast splash damage <!-- id: 39 -->
+    - [x] Refine Lydrosome "Hydro Shot" to be a "thin penetrating stream" <!-- id: 45 -->
+- [x] Fix Overload explosion to damage ALL neighbors <!-- id: 57 -->
+- [x] Fix Centering & Persistence of Explosion Visuals <!-- id: 58 -->
+- [x] Implement Enemy Reinforcement Visuals <!-- id: 54 -->
+- [x] Perform System Audit & Stability Fixes <!-- id: 50 -->
+    - [x] Fix multi-shot sequential death bug (Player & AI) <!-- id: 51 -->
+    - [x] Fix missing collateral death messages in explosions <!-- id: 52 -->
+    - [x] Fix delayed reflect UI rendering for NPCs <!-- id: 53 -->
+- [x] Limit Nitrophil Reflect to once per action (Logic & Visual) <!-- id: 55 -->
+- [x] Fix Centering & Persistence of Explosion Visuals <!-- id: 58 -->
+- [x] Refine "Overload" Explosion Visuals (Jitter, Shockwave, Debris) <!-- id: 56 -->
+- [ ] Polish Canobolus "Ballistic Volley" Visuals <!-- id: 18 -->
+- [x] Implement Nitrophil "Reactive Membrane" Reflect Visuals <!-- id: 42 -->
+    - [x] Create `.reflect-ping` and `.reflect-spike` CSS styles <!-- id: 43 -->
+    - [x] Update `resolveHit` logic to trigger reflect visuals and delayed damage <!-- id: 44 -->
+- [x] Implement Improved Game Over Sequence <!-- id: 22 -->
+    - [x] Create UI Overlay in index.html <!-- id: 23 -->
+    - [x] Add Blur and Overlay styles to style.css <!-- id: 24 -->
+    - [x] Update showGameOverEffect logic in game.js <!-- id: 25 -->
+- [x] Make Game Full Screen & Responsive <!-- id: 26 -->
+    - [x] Update Layout for Full Window (remove max-width) <!-- id: 27 -->
+    - [x] Add Info Panel HTML Structure <!-- id: 30 -->
+    - [x] Implement Desktop Grid Layout in CSS <!-- id: 31 -->
+    - [x] Implement updateInfoPanel logic in JS <!-- id: 32 -->
+- [x] Fix Database Button Visibility on Desktop <!-- id: 33 -->
+
+# Task: Implement AI Monster Abilities
+
+- [x] Analyze current AI attack logic <!-- id: 0 -->
+- [x] Implement Nitro Blast (splash damage) for AI <!-- id: 1 -->
+- [x] Implement Hydro Shot (bypass vanguard) for AI <!-- id: 2 -->
+- [x] Implement Ballistic Volley (multi-shot) for AI <!-- id: 3 -->
+- [x] Add AI decision logic for ability selection <!-- id: 4 -->
+- [x] Test AI ability usage (Manual) <!-- id: 5 -->
+- [x] Acclimatization Turn 1: Change Attack button to "END TURN" <!-- id: 6 -->
+- [x] Fix Battle Log text overlap with buttons <!-- id: 7 -->
+- [x] Make "End Turn (Acclimatization)" button immediately skip turn (No Notification) <!-- id: 8 -->
+- [x] Increase Pellicle absorption animation speed by 25% <!-- id: 9 -->
+- [x] Move Pellicle Count indicator to bottom-center of monster slot <!-- id: 10 -->
+- [x] Fix Pellicle Count alignment (Pixel Perfect Center) <!-- id: 11 -->
+- [x] Restore "Low Pellicle" red glow warning effect (Icon Only) <!-- id: 12 -->
+    - [x] FIX: Add missing styling for `.monster.vulnerable img` in style.css <!-- id: 40 -->
+- [x] FIX: AI attacks now correctly update Enemy Team UI (Reflect Damage fix) <!-- id: 41 -->
+- [x] Change Pellicle Counter to red when 0 <!-- id: 13 -->
+- [x] Implement Enemy Pellicle Animation (Visual Match) <!-- id: 14 -->
+- [x] Fix Enemy Pellicle Token positioning ("Falling" bug) - Fixed CSS Conflict <!-- id: 15 -->

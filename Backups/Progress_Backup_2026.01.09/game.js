@@ -22,11 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const rulebookScreen = document.getElementById('rulebook-screen');
     const btnRulebook = document.getElementById('btn-db-rulebook');
     const btnRbBack = document.getElementById('btn-rb-back');
-    const cellContainerScreen = document.getElementById('cell-container-screen');
-    const btnCellContainer = document.getElementById('btn-cell-container');
-    const btnLoadoutSave = document.getElementById('btn-loadout-save');
-    const loadoutMsg = document.getElementById('loadout-msg');
-    const monsterPoolGrid = document.getElementById('monster-pool-grid');
 
     // Tooltip Elements
     const tooltip = document.getElementById('ability-tooltip');
@@ -40,112 +35,62 @@ document.addEventListener('DOMContentLoaded', () => {
     // PRELOAD DRAG IMAGE (Reference DOM element directly for reliable sizing)
     const attackDragIcon = document.getElementById('drag-attack-icon');
 
-    // --- MONSTER DATABASE ---
-    const MONSTER_DATABASE = {
-        // Team A: The Cell Trio (Standard)
-        'nitro': {
-            id: 'nitro', name: 'Nitrophil', faction: 'A',
-            ability: {
-                attack: "Nitro Blast (2P): 1 dmg + splash to neighbors.",
-                passive: "Reactive: Reflect 1 damage when hit."
-            }
-        },
-        'lydro': {
-            id: 'lydro', name: 'Lydrosome', faction: 'A',
-            ability: {
-                attack: "Hydro Shot (2P): Bypass Vanguard.",
-                passive: "Osmotic: Transfer Pellicles to allies."
-            }
-        },
-        'cano': {
-            id: 'cano', name: 'Canobolus', faction: 'A',
-            ability: {
-                attack: "Volley (XP): Fire all P as rapid shots.",
-                passive: "Root: Get +1 bonus P when reinforced."
-            }
-        },
-        // Team B: The Scavenger Strain (New)
-        'kerashell': {
-            id: 'kerashell', name: 'Kerashell', faction: 'B',
-            ability: {
-                attack: "Light Strike (1P): Destroy 1 Pellicle.",
-                passive: "Vanguard: Starts with 2 Pellicles in front."
-            }
-        },
-        'mitonegy': {
-            id: 'mitonegy', name: 'Mitonegy', faction: 'B',
-            ability: {
-                attack: "Auto-Repair (2P): 1 dmg + heal ally.",
-                passive: "Free Gift: All allies start with +1 Pellicle."
-            }
-        },
-        'chlarob': {
-            id: 'chlarob', name: 'Chlarob', faction: 'B',
-            ability: {
-                attack: "Quick Rob (2P): 1 dmg + STEAL 1P.",
-                passive: "Loot: Gives +1P to ally upon death."
-            }
-        }
-    };
+    // --- GAME CONSTANTS ---
+    const MAX_PELLICLE = 5;
+    const REINFORCE_AMOUNT = 2;
+    const ATTACK_COST = 1;
 
     // --- GAME STATE ---
-    let playerTeam = [];
-    let enemyTeam = [];
 
-    // Indices 0-2: Active (Vanguard, WingL, WingR)
-    // Indices 3-4: Reserves
-    const ACTIVE_SLOTS = 3;
-    const TOTAL_SLOTS = 5;
-    const REINFORCE_AMOUNT = 2;
+    // PLAYER TEAM
+    let playerTeam = [
+        {
+            id: 'nitro', name: 'Nitrophil', pellicle: 1, max: 5, hasSwapped: false, attackCount: 0, isDead: false, hasReflectedThisAction: false,
+            ability: {
+                attack: "Nitro Blast (2P): Destroy 1 Pellicle + splash 1 damage to neighbors.",
+                passive: "Reactive Membrane: Reflect 1 damage to attacker when hit."
+            }
+        },
+        {
+            id: 'lydro', name: 'Lydrosome', pellicle: 1, max: 5, hasSwapped: false, attackCount: 0, isDead: false, hasReflectedThisAction: false,
+            ability: {
+                attack: "Hydro Shot (2P): Bypass Vanguard to hit Wings directly.",
+                passive: "Osmotic Flow: Transfer Pellicles to allies during Reinforce Phase."
+            }
+        },
+        {
+            id: 'cano', name: 'Canobolus', pellicle: 1, max: 5, hasSwapped: false, attackCount: 0, isDead: false, hasReflectedThisAction: false,
+            ability: {
+                attack: "Ballistic Volley (XP): Burn all X Pellicles to destroy X enemy Pellicles.",
+                passive: "Root Synergy: Receive +1 bonus Pellicle when reinforced."
+            }
+        }
+    ];
 
-    function createMonsterInstance(dbId, isPlayer) {
-        const template = MONSTER_DATABASE[dbId];
-        if (!template) return null;
-        return {
-            ...template,
-            id: (isPlayer ? '' : 'e_') + dbId,
-            pellicle: 1, // Default
-            max: 5,
-            isDead: false,
-            hasReflectedThisAction: false,
-            attackCount: 0,
-            hasSwapped: false
-        };
-    }
-
-    let savedSquadConfig = ['nitro', 'lydro', 'cano', 'nitro', 'lydro']; // Default Config
-    let currentLoadout = [...savedSquadConfig]; // Temp config while editing
-    let selectedLoadoutSlot = null;
-
-    function resetGameState() {
-        console.log("RESETTING GAME STATE (5-MONSTER SQUAD)...");
-        pelliclePool = 0;
-        turnNumber = 1;
-        actionTaken = false;
-        isGameOver = false;
-
-        // LOAD FROM SAVED CONFIG
-        playerTeam = savedSquadConfig.map(id => createMonsterInstance(id, true));
-
-        // Mirror Team A for Enemy Team (Mirrors player config for fairness/testing)
-        enemyTeam = savedSquadConfig.map(id => createMonsterInstance(id, false));
-
-        // Apply Passives (e.g. Kerashell Vanguard - keeping logic for when team B returns)
-        [playerTeam, enemyTeam].forEach(team => {
-            team.forEach((m, idx) => {
-                if (!m) return;
-                // Kerashell Start Bonus
-                if (m.id.includes('kerashell') && idx === 0) {
-                    m.pellicle = 2;
-                }
-                // Mitonegy Start Bonus (Global)
-                const hasMitonegy = team.some(mon => mon && mon.id.includes('mitonegy'));
-                if (hasMitonegy) m.pellicle += 1;
-            });
-        });
-
-        updateBattleLog("WELCOME TO CELLULAR WARS");
-    }
+    // ENEMY TEAM
+    let enemyTeam = [
+        {
+            id: 'e_nitro', name: 'Nitrophil', pellicle: 1, max: 5, isDead: false, hasReflectedThisAction: false,
+            ability: {
+                attack: "Nitro Blast (2P): Destroy 1 Pellicle + splash 1 damage to neighbors.",
+                passive: "Reactive Membrane: Reflect 1 damage to attacker when hit."
+            }
+        },
+        {
+            id: 'e_lydro', name: 'Lydrosome', pellicle: 1, max: 5, isDead: false, hasReflectedThisAction: false,
+            ability: {
+                attack: "Hydro Shot (2P): Bypass Vanguard to hit Wings directly.",
+                passive: "Osmotic Flow: Transfer Pellicles to allies during Reinforce Phase."
+            }
+        },
+        {
+            id: 'e_cano', name: 'Canobolus', pellicle: 1, max: 5, isDead: false, hasReflectedThisAction: false,
+            ability: {
+                attack: "Ballistic Volley (XP): Burn all X Pellicles to destroy X enemy Pellicles.",
+                passive: "Root Synergy: Receive +1 bonus Pellicle when reinforced."
+            }
+        }
+    ];
 
     let currentPhase = 'REINFORCE'; // PHASES: REINFORCE, ACTION
     let lastAnnouncedPhase = ''; // To track phase changes for animation
@@ -208,7 +153,67 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function resetGameState() {
+        console.log("Resetting Game State...");
+        isGameOver = false;
+        turnNumber = 1;
+        pelliclePool = 0;
+        actionTaken = false;
+        isAITurn = false;
+        currentPhase = 'REINFORCE';
+        lastAnnouncedPhase = '';
 
+        // Reset Teams (restore initial stats)
+        playerTeam = [
+            {
+                id: 'nitro', name: 'Nitrophil', pellicle: 1, max: 5, hasSwapped: false, attackCount: 0, isDead: false,
+                ability: {
+                    attack: "Nitro Blast (2P): Destroy 1 Pellicle + splash 1 damage to neighbors.",
+                    passive: "Reactive Membrane: Reflect 1 damage to attacker when hit."
+                }
+            },
+            {
+                id: 'lydro', name: 'Lydrosome', pellicle: 1, max: 5, hasSwapped: false, attackCount: 0, isDead: false,
+                ability: {
+                    attack: "Hydro Shot (2P): Bypass Vanguard to hit Wings directly.",
+                    passive: "Osmotic Flow: Transfer Pellicles to allies during Reinforce Phase."
+                }
+            },
+            {
+                id: 'cano', name: 'Canobolus', pellicle: 1, max: 5, hasSwapped: false, attackCount: 0, isDead: false,
+                ability: {
+                    attack: "Ballistic Volley (XP): Burn all X Pellicles to destroy X enemy Pellicles.",
+                    passive: "Root Synergy: Receive +1 bonus Pellicle when reinforced."
+                }
+            }
+        ];
+
+        enemyTeam = [
+            {
+                id: 'e_nitro', name: 'Nitrophil', pellicle: 1, max: 5, isDead: false,
+                ability: {
+                    attack: "Nitro Blast (2P): Destroy 1 Pellicle + splash 1 damage to neighbors.",
+                    passive: "Reactive Membrane: Reflect 1 damage to attacker when hit."
+                }
+            },
+            {
+                id: 'e_lydro', name: 'Lydrosome', pellicle: 1, max: 5, isDead: false,
+                ability: {
+                    attack: "Hydro Shot (2P): Bypass Vanguard to hit Wings directly.",
+                    passive: "Osmotic Flow: Transfer Pellicles to allies during Reinforce Phase."
+                }
+            },
+            {
+                id: 'e_cano', name: 'Canobolus', pellicle: 1, max: 5, isDead: false,
+                ability: {
+                    attack: "Ballistic Volley (XP): Burn all X Pellicles to destroy X enemy Pellicles.",
+                    passive: "Root Synergy: Receive +1 bonus Pellicle when reinforced."
+                }
+            }
+        ];
+
+        updateBattleLog("WAITING FOR ACTION...");
+    }
 
     // --- UTILS: SPAWN TOKENS ---
     function showGameMessage(text, colorType) {
@@ -236,14 +241,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- INFO PANEL LOGIC (Right Sidebar) ---
-    // --- INFO PANEL LOGIC (Right Sidebar) ---
     function updateInfoPanel(monster) {
-        const panel = document.getElementById('info-panel');
-        console.log("updateInfoPanel called. Monster:", monster ? monster.name : "null", "Panel found:", !!panel);
-        if (panel) {
-            panel.classList.remove('hidden');
-            panel.style.display = 'flex'; // Force display
-        }
+        if (!monster) return;
 
         const panelName = document.getElementById('panel-name');
         const panelImg = document.getElementById('panel-img');
@@ -251,20 +250,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const panelStatus = document.getElementById('panel-status');
         const panelAttack = document.getElementById('panel-attack');
         const panelPassive = document.getElementById('panel-passive');
-
-        if (!monster) {
-            // Default State
-            if (panelName) panelName.innerText = "Info Panel";
-            if (panelImg) panelImg.classList.add('hidden');
-            if (panelPellicle) panelPellicle.innerText = "-";
-            if (panelStatus) {
-                panelStatus.innerText = "WAITING...";
-                panelStatus.style.color = "#888";
-            }
-            if (panelAttack) panelAttack.innerText = "Hover over a monster to see details.";
-            if (panelPassive) panelPassive.innerText = "-";
-            return;
-        }
 
         if (panelName) panelName.innerText = monster.name;
 
@@ -380,15 +365,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- CORE MECHANICS ---
 
-
+    // 1. REINFORCE LOGIC
+    function checkLastStand(team) {
+        let livingCount = 0;
+        team.forEach(m => { if (!m.isDead) livingCount++; });
+        return (livingCount === 1);
+    }
 
     function startReinforcePhase() {
         currentPhase = 'REINFORCE';
-        pelliclePool = REINFORCE_AMOUNT;
+
+        // LAST STAND CHECK
+        const isLastStand = checkLastStand(playerTeam);
+        if (isLastStand) {
+            pelliclePool = 3; // Bonus for survivor
+            showGameMessage("LAST STAND ACTIVE!", "red");
+        } else {
+            pelliclePool = REINFORCE_AMOUNT;
+        }
 
         // RESET TURN FLAGS
         playerTeam.forEach(m => {
-            if (!m) return;
             m.hasSwapped = false;
             m.attackCount = 0; // Reset counter
         });
@@ -396,12 +393,13 @@ document.addEventListener('DOMContentLoaded', () => {
         actionTaken = false; // Reset team action flag
 
         updateTurnIndicator();
+        updateTurnIndicator();
         updatePhaseUI();
 
         // SPAWN PELLICLE TOKENS
         spawnPellicleTokens(pelliclePool);
 
-        updateBattleLog(`REINFORCE PHASE: +${pelliclePool} PELLICLE GENERATED`);
+        updateBattleLog(isLastStand ? "LAST STAND: +3 PELLICLE GENERATED" : `REINFORCE PHASE: +${pelliclePool} PELLICLE GENERATED`);
     }
 
     function endReinforcePhase() {
@@ -452,8 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Loop with delay for animation
         for (let i = 0; i < availablePP; i++) {
-            // RULE: AI only reinforces Active slots (0-2)
-            const livingEnemies = enemyTeam.filter((m, idx) => !m.isDead && idx < 3);
+            const livingEnemies = enemyTeam.filter(m => !m.isDead);
             if (livingEnemies.length === 0) break;
 
             // AI LOGIC: Priority Vanguard (0) < 3, else Random
@@ -521,8 +518,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function runAIAction() {
         resetReflectFlags();
-        // Pick an attacker (Only Active squad can attack)
-        const livingAI = enemyTeam.filter((m, idx) => !m.isDead && m.pellicle > 0 && idx < 3);
+        // AI action logic with full ability support
+        const livingAI = enemyTeam.filter(m => !m.isDead && m.pellicle > 0);
         if (livingAI.length === 0) {
             setTimeout(() => endTurn(), 1000);
             return;
@@ -532,8 +529,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const attacker = livingAI.sort((a, b) => b.pellicle - a.pellicle)[0];
         const attackerIdx = enemyTeam.indexOf(attacker);
 
-        // Pick a victim (AI only targets Active squad 0-2)
-        const livingPlayer = playerTeam.filter((m, idx) => !m.isDead && idx < 3);
+        // Pick a victim based on attacker type
+        const livingPlayer = playerTeam.filter(m => !m.isDead);
         if (livingPlayer.length === 0) {
             setTimeout(() => endTurn(), 1000);
             return;
@@ -626,7 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderFormation();
 
                 // SPLASH DAMAGE
-                let neighbors = getNeighbors(victimIdx);
+                let neighbors = (victimIdx === 0) ? [1, 2] : [0];
                 const splashIdx = getBestSplashTarget(neighbors, playerTeam);
 
                 if (splashIdx !== null) {
@@ -677,27 +674,22 @@ document.addEventListener('DOMContentLoaded', () => {
     function addPellicleFromDrag(index, tokenId) {
         if (currentPhase !== 'REINFORCE' || pelliclePool <= 0) return;
 
-        // RULE: Reserves cannot receive Reinforcements
-        if (index >= 3) {
-            showGameMessage("Reserves cannot receive reinforcements!", "red");
-            return;
-        }
-
         const monster = playerTeam[index];
         console.log(`[REINFORCE] Target: ${monster.name}, Current P: ${monster.pellicle}, Max: ${monster.max}`);
 
         // CHECK OVERLOAD (6th point)
         const isCano = monster.id.includes('cano');
         const gainAmount = isCano ? 2 : 1;
+        const isLastStand = checkLastStand(playerTeam); // Check immunity
 
-        if (monster.pellicle + gainAmount >= 6) {
+        if (monster.pellicle + gainAmount >= 6 && !isLastStand) {
             pelliclePool--;
             triggerExplosion(playerTeam, index);
 
             return;
         }
 
-        if (!monster.isDead && (monster.pellicle < monster.max)) {
+        if (!monster.isDead && (monster.pellicle < monster.max || isLastStand)) {
             monster.pellicle += gainAmount;
             pelliclePool--;
 
@@ -744,11 +736,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // FORCE REFLOW IMMEDIATELY to ensure start position is rendered
         void tokenEl.offsetWidth;
 
-        // disable CSS animation to prevent conflict with transform
-        tokenEl.style.animation = 'none';
-        // Force reflow
-        void tokenEl.offsetWidth;
-
         // Get monster position
         const slot = getSlotElement(monsterIndex, isPlayerAndTarget);
         if (!slot) {
@@ -761,11 +748,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const monsterRect = slot.getBoundingClientRect();
         const tokenRect = tokenEl.getBoundingClientRect();
 
+        console.log('Monster rect:', monsterRect);
+        console.log('Token rect:', tokenRect);
+
         // Calculate target position (center of monster)
         const targetX = monsterRect.left + monsterRect.width / 2;
         const targetY = monsterRect.top + monsterRect.height / 2;
 
-        // Calculate current position (now that animation is off and reflowed)
+        // Calculate current position
         const startX = tokenRect.left + tokenRect.width / 2;
         const startY = tokenRect.top + tokenRect.height / 2;
 
@@ -773,6 +763,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const deltaY = targetY - startY;
 
         console.log(`Animating from (${startX}, ${startY}) to (${targetX}, ${targetY}), delta: (${deltaX}, ${deltaY})`);
+
+        // disable CSS animation to prevent conflict with transform
+        tokenEl.style.animation = 'none';
+        // Force reflow
+        void tokenEl.offsetWidth;
 
         // Make token highly visible and animate
         tokenEl.style.zIndex = '10000'; // Bring to front
@@ -868,13 +863,11 @@ document.addEventListener('DOMContentLoaded', () => {
             monster.pellicle = 0;
             triggerScreenShake();
 
-            // Neighbor Damage (Pentagon adjacency)
-            let neighbors = getNeighbors(index);
-
+            // Neighbor Damage (Triangle chain reaction)
+            let neighbors = (index === 0) ? [1, 2] : (index === 1 ? [0, 2] : [0, 1]);
             neighbors.forEach(nIdx => {
                 const neighbor = team[nIdx];
-                // RULE: Reserves are immune to Chain Reaction damage
-                if (neighbor && !neighbor.isDead && nIdx < 3) {
+                if (!neighbor.isDead) {
                     triggerVisualEffect(nIdx, isPlayer, 'hit-flash');
                     if (neighbor.pellicle > 0) {
                         neighbor.pellicle -= 1;
@@ -896,12 +889,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function addPellicleToEnemyFromDrag(index, tokenId) {
         if (currentPhase !== 'REINFORCE' || pelliclePool <= 0) return;
-
-        // RULE: Enemy Reserves cannot be "pumped"
-        if (index >= 3) {
-            showGameMessage("Enemy reserves are out of reach!", "red");
-            return;
-        }
 
         const monster = enemyTeam[index];
 
@@ -964,13 +951,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const isTransfer = (currentPhase === 'REINFORCE' && monster.id.includes('lydro') && monster.pellicle > 0);
 
         if (!isTransfer && monster.pellicle <= 0) {
-            e.preventDefault();
-            return;
-        }
-
-        // RULE: Reserves cannot attack
-        if (!isTransfer && index >= 3) {
-            showGameMessage("Reserve cells cannot initiate attacks!", "red");
             e.preventDefault();
             return;
         }
@@ -1108,27 +1088,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 const source = playerTeam[sourceIndex];
                 const target = playerTeam[targetIndex];
 
-                // IDENTIFY TACTIC SWITCH (Movement between Active (0-2) and Reserve (3-4))
-                const sourceIsActive = sourceIndex < 3;
-                const targetIsActive = targetIndex < 3;
-                const isTacticSwitch = sourceIsActive !== targetIsActive;
-
                 // ALLOW swapping even if target is dead (moving wreckage)
                 const temp = { ...source };
                 playerTeam[sourceIndex] = { ...target };
                 playerTeam[targetIndex] = temp;
 
-                // Only consume action if it's a Tactic Switch
-                if (isTacticSwitch) {
-                    actionTaken = true;
-                    updateBattleLog(`TACTIC SWITCH: ${source.name} MOVED TO ${targetIsActive ? 'ACTIVE' : 'RESERVE'}`);
-                } else {
-                    updateBattleLog(`FORMATION ADJUSTMENT: ${source.name} SHIFTED`);
-                }
-
+                actionTaken = true; // Mark action as taken
                 renderFormation();
                 updatePhaseUI();
-                checkVanguardHealth(); // Check if they moved someone INTO vanguard
+                setTimeout(() => {
+                    updateBattleLog(`${source.name} SWAPS WITH ${target.name}`);
+                }, 100);
             }
         }
     }
@@ -1164,12 +1134,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (enemyIndex !== 0 && !vanguard.isDead && !canBypass) {
             showGameMessage("You must eliminate the Vanguard first!", "red");
-            return;
-        }
-
-        // RULE: Cannot attack Reserves
-        if (enemyIndex >= 3) {
-            showGameMessage("You cannot attack cells in the Reserve Area!", "red");
             return;
         }
 
@@ -1222,7 +1186,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (attacker.attackCount >= 1) {
+        const isLastStand = checkLastStand(playerTeam);
+        const maxAttacks = isLastStand ? 2 : 1;
+
+        if (attacker.attackCount >= maxAttacks) {
             showGameMessage(`${attacker.name} exhausted!`, "red");
             return;
         }
@@ -1277,7 +1244,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // NITRO SPLASH (Only triggers if attacker is Nitrophil using Blast)
             if (isNitroBlast) {
-                let neighbors = getNeighbors(victimIndex);
+                let neighbors = (victimIndex === 0) ? [1, 2] : [0];
                 const splashIdx = getBestSplashTarget(neighbors, enemyTeam);
                 if (splashIdx !== null) {
                     const neighbor = enemyTeam[splashIdx];
@@ -1499,9 +1466,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // A. REACTIVE MEMBRANE (Nitrophil Passive)
         let reflectDamage = false;
-        // RULE: Passives do not trigger in Reserve
-        const isVictimPlayer = (team === playerTeam);
-        if (victim.id.includes('nitro') && victim.pellicle > 0 && attacker && attackerTeam && !victim.hasReflectedThisAction && victimIndex < 3) {
+        if (victim.id.includes('nitro') && victim.pellicle > 0 && attacker && attackerTeam && !victim.hasReflectedThisAction) {
             reflectDamage = true;
             victim.hasReflectedThisAction = true; // Block further reflects this action
         }
@@ -1549,57 +1514,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 renderFormation();
                 renderEnemyFormation();
-                checkVanguardHealth(); // NEW: Check for empty Vanguard after hit
                 checkGameOver();
             });
         }
 
-        checkVanguardHealth();
         checkGameOver();
-    }
-
-    function checkVanguardHealth() {
-        if (isGameOver) return;
-
-        // Player Vanguard Check
-        const vanguard = playerTeam[0];
-        const hasSurvivors = playerTeam.some(m => m && !m.isDead);
-
-        if (vanguard.isDead && hasSurvivors) {
-            showGameMessage("VANGUARD DEFEATED! PROMOTE A REPLACEMENT", "red");
-
-            // Visual Lockout: Highlight slot 0
-            const vSlot = getSlotElement(0, true);
-            if (vSlot) vSlot.classList.add('promotion-needed');
-
-            // Disable Action Buttons until resolved
-            if (endTurnBtn) endTurnBtn.classList.add('hidden');
-            if (startActionBtn) startActionBtn.classList.add('hidden');
-
-            return true; // Urgent attention needed
-        } else {
-            const vSlot = getSlotElement(0, true);
-            if (vSlot) vSlot.classList.remove('promotion-needed');
-
-            // Re-enable UI if valid
-            updatePhaseUI();
-            return false;
-        }
     }
 
     // --- WIN/LOSS LOGIC ---
     function checkGameOver() {
         if (isGameOver) return;
 
-        const playerWipe = playerTeam.every(m => !m || m.isDead);
-        const enemyWipe = enemyTeam.every(m => !m || m.isDead);
+        const playerWipe = playerTeam.every(m => m.isDead);
+        const enemyWipe = enemyTeam.every(m => m.isDead);
 
         if (enemyWipe) {
             isGameOver = true;
-            showGameOverEffect("GENOME DESTROYED", "var(--neon-green)");
+            showGameOverEffect("DIVISION SUCCESS", "var(--neon-green)");
         } else if (playerWipe) {
             isGameOver = true;
-            showGameOverEffect("GENOME FAILURE", "var(--neon-red)");
+            showGameOverEffect("DIVISION FAILURE", "var(--neon-red)");
         }
     }
 
@@ -1758,14 +1692,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function bindSlotDropZones() {
-        for (let i = 0; i < TOTAL_SLOTS; i++) {
-            const slot = getSlotElement(i, true);
-            if (!slot) continue;
+        const vSlot = document.querySelector('.player-team .vanguard');
+        const lSlot = document.querySelector('.player-team .wing[data-pos="wing-left"]');
+        const rSlot = document.querySelector('.player-team .wing[data-pos="wing-right"]');
+
+        [vSlot, lSlot, rSlot].forEach((slot, index) => {
             slot.addEventListener('dragover', handleDragOver);
             slot.addEventListener('dragenter', handleDragEnter);
             slot.addEventListener('dragleave', handleDragLeave);
-            slot.addEventListener('drop', (e) => handleDropPlayerSlot(e, i));
-        }
+            slot.addEventListener('drop', (e) => handleDropPlayerSlot(e, index));
+        });
     }
 
     function handleDragEnterEnemy(el, e, index) {
@@ -1807,7 +1743,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Rule 5: Victim check
-            if (victim && (victim.isDead || index >= 3)) isInvalid = true;
+            if (victim && victim.isDead) isInvalid = true;
 
             if (isInvalid) {
                 el.classList.add('invalid-target');
@@ -1821,34 +1757,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function bindEnemyDropZones() {
-        for (let i = 0; i < TOTAL_SLOTS; i++) {
-            const slot = getSlotElement(i, false);
-            if (!slot) continue;
-            slot.addEventListener('dragover', handleDragOver);
-            slot.addEventListener('dragenter', (e) => handleDragEnterEnemy(slot, e, i));
-            slot.addEventListener('dragleave', (e) => handleDragLeaveEnemy(slot, e));
-            slot.addEventListener('drop', (e) => handleDropEnemySlot(e, i));
-        }
+        const enemyContainer = document.querySelector('.enemy-team');
+        const mapping = [
+            { slot: enemyContainer.querySelector('.vanguard'), index: 0 },
+            { slot: enemyContainer.querySelector('.wing[data-pos="wing-left"]'), index: 1 },
+            { slot: enemyContainer.querySelector('.wing[data-pos="wing-right"]'), index: 2 }
+        ];
+
+        mapping.forEach(obj => {
+            obj.slot.addEventListener('dragover', handleDragOver);
+            obj.slot.addEventListener('dragenter', (e) => handleDragEnterEnemy(obj.slot, e, obj.index));
+            obj.slot.addEventListener('dragleave', (e) => handleDragLeaveEnemy(obj.slot, e));
+            obj.slot.addEventListener('drop', (e) => handleDropEnemySlot(e, obj.index));
+        });
     }
 
     function renderFormation() {
-        for (let i = 0; i < TOTAL_SLOTS; i++) {
+        for (let i = 0; i < 3; i++) {
             const slot = getSlotElement(i, true);
             if (slot) {
                 slot.innerHTML = '';
-                const monster = playerTeam[i];
-                if (monster) createMonsterDOM(monster, slot, i, true);
+                createMonsterDOM(playerTeam[i], slot, i, true);
             }
         }
     }
 
     function renderEnemyFormation() {
-        for (let i = 0; i < TOTAL_SLOTS; i++) {
+        for (let i = 0; i < 3; i++) {
             const slot = getSlotElement(i, false);
             if (slot) {
                 slot.innerHTML = '';
-                const monster = enemyTeam[i];
-                if (monster) createMonsterDOM(monster, slot, i, false);
+                createMonsterDOM(enemyTeam[i], slot, i, false);
             }
         }
     }
@@ -1859,12 +1798,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const clickedMonster = playerTeam[index];
         if (clickedMonster.isDead) return;
-
-        // RULE: Reserves cannot use/be target of abilities (Osmotic Flow)
-        if (index >= 3) {
-            showGameMessage("Reserves are dormant and cannot use abilities!", "red");
-            return;
-        }
 
         // 1. IF SELECTING SOURCE (Nothing selected yet)
         if (selectedAbilitySourceIndex === null) {
@@ -2010,8 +1943,9 @@ document.addEventListener('DOMContentLoaded', () => {
         ringContainer.style.pointerEvents = 'none'; // Click-through
         div.appendChild(ringContainer);
 
-        // Render Rings based on Pellicle count (Max 5, but logic allows more for mods/edge cases)
-        // Cap visual scaling to avoid breaking UI.
+        // Render Rings based on Pellicle count
+        // Last Stand can have > 5, but we only have so much space visually.
+        // Cap visual rings at 10 or just let them stack? Let's cap visual scaling to avoid breaking UI.
         const renderCount = Math.min(monster.pellicle, 10);
 
         for (let i = 0; i < renderCount; i++) {
@@ -2060,13 +1994,7 @@ document.addEventListener('DOMContentLoaded', () => {
         gameBoard.classList.remove('hidden');
         resetGameState();
         initGame();
-
-        // Delay to ensure layout is fully calculated for token spawning
-        setTimeout(() => {
-            startReinforcePhase();
-            updateInfoPanel(playerTeam[0]); // Default to Vanguard info immediately
-            if (battleLog) battleLog.classList.remove('hidden');
-        }, 500);
+        startReinforcePhase();
     });
 
     if (btnCollection) {
@@ -2207,7 +2135,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const teamClass = isPlayer ? '.player-team' : '.enemy-team';
         const container = document.querySelector(teamClass);
         if (!container) return null;
-        return container.querySelector(`.slot[data-index="${index}"]`);
+
+        if (index === 0) return container.querySelector('.vanguard');
+        if (index === 1) return container.querySelector('.wing[data-pos="wing-left"]');
+        if (index === 2) return container.querySelector('.wing[data-pos="wing-right"]');
+        return null;
     }
 
     function showActionIndicator(slot, type) {
@@ -2262,13 +2194,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isAITurn || isGameOver) return;
             const monster = playerTeam[index];
             const isTransfer = (currentPhase === 'REINFORCE' && monster.id.includes('lydro') && monster.pellicle > 0);
-
-            // RULE: Reserves cannot attack or transfer
-            if (index >= 3) {
-                showGameMessage("Reserves are dormant!", "red");
-                return;
-            }
-
             if (!isTransfer && monster.pellicle <= 0) return;
 
             draggedIndex = index;
@@ -2412,185 +2337,13 @@ document.addEventListener('DOMContentLoaded', () => {
         clearActionIndicators();
     }
 
-    // --- CELL CONTAINER (LOADOUT) LOGIC ---
-    function initCellContainer() {
-        renderLoadoutSlots();
-        renderMonsterPool();
-    }
-
-    function renderLoadoutSlots() {
-        const slots = document.querySelectorAll('.loadout-slot');
-        slots.forEach(slot => {
-            const index = parseInt(slot.dataset.slot);
-            const monsterId = currentLoadout[index];
-            const content = slot.querySelector('.slot-content');
-
-            // Clear previous content
-            content.innerHTML = '';
-
-            if (monsterId) {
-                const template = MONSTER_DATABASE[monsterId];
-                if (template) {
-                    const img = document.createElement('img');
-                    const imgName = template.name.replace(/\s+/g, '');
-                    img.src = `Images/${imgName}.png`;
-                    content.appendChild(img);
-                }
-            }
-
-            // DRAG & DROP HANDLERS (SLOT IS DROP TARGET)
-            slot.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                slot.classList.add('drag-over');
-            });
-
-            slot.addEventListener('dragleave', (e) => {
-                slot.classList.remove('drag-over');
-            });
-
-            slot.addEventListener('drop', (e) => {
-                e.preventDefault();
-                slot.classList.remove('drag-over');
-
-                const rawData = e.dataTransfer.getData('text/plain');
-                if (rawData && rawData.includes('type:loadout-monster')) {
-                    const newMonsterId = rawData.split('id:')[1];
-                    equipMonster(index, newMonsterId);
-                }
-            });
-
-            // Selection State
-            if (selectedLoadoutSlot === index) {
-                slot.classList.add('selected');
-            } else {
-                slot.classList.remove('selected');
-            }
-
-            // Keep click for fallback/highlight
-            slot.onclick = () => {
-                slots.forEach(s => s.classList.remove('selected'));
-                slot.classList.add('selected');
-                selectedLoadoutSlot = index;
-                updateLoadoutMessage("Select a monster from the pool.");
-            };
-        });
-    }
-
-    function equipMonster(slotIndex, monsterId) {
-        // Limit Check
-        const count = currentLoadout.filter((id, idx) => id === monsterId && idx !== slotIndex).length;
-        if (count >= 2) {
-            // Find name
-            const template = MONSTER_DATABASE[monsterId];
-            updateLoadoutMessage(`Limit reached for ${template ? template.name : 'Unit'} (Max 2)!`, "red");
-            return;
-        }
-
-        currentLoadout[slotIndex] = monsterId;
-        renderLoadoutSlots();
-        renderMonsterPool(); // Update counts
-
-        const template = MONSTER_DATABASE[monsterId];
-        updateLoadoutMessage(`Equipped ${template ? template.name : 'Monster'}!`);
-    }
-
-    function renderMonsterPool() {
-        monsterPoolGrid.innerHTML = '';
-        const allMonsters = Object.values(MONSTER_DATABASE);
-
-        allMonsters.forEach(m => {
-            const div = document.createElement('div');
-            div.classList.add('pool-item');
-
-            // DRAG SOURCE
-            div.draggable = true;
-            div.addEventListener('dragstart', (e) => {
-                // Check limit for visual feedback or prevent start? 
-                // We allow drag but block drop if limit reached, or block drag here.
-                const count = currentLoadout.filter(id => id === m.id).length;
-                if (count >= 2) {
-                    // e.preventDefault(); // Optional: stop drag if full
-                    // updateLoadoutMessage(`Limit reached for ${m.name}!`, "red");
-                }
-
-                e.dataTransfer.setData('text/plain', `type:loadout-monster;id:${m.id}`);
-                e.dataTransfer.effectAllowed = 'copy';
-            });
-
-            // Count existing in loadout for limit check
-            const count = currentLoadout.filter(id => id === m.id).length;
-            const isFull = count >= 2;
-
-            if (isFull) {
-                div.classList.add('disabled');
-            }
-
-            div.innerHTML = `
-                <img src="Images/${m.name.replace(/\s+/g, '')}.png">
-                <span>${m.name}</span>
-                <span style="font-size:0.7em; color:${isFull ? 'red' : '#aaa'}">${count}/2</span>
-            `;
-
-            // Click fallback
-            div.onclick = () => {
-                if (selectedLoadoutSlot !== null) {
-                    equipMonster(selectedLoadoutSlot, m.id);
-                }
-            };
-
-            monsterPoolGrid.appendChild(div);
-        });
-    }
-
-    function updateLoadoutMessage(text, color = "var(--neon-green)") {
-        if (loadoutMsg) {
-            loadoutMsg.innerText = text;
-            loadoutMsg.style.color = color === 'red' ? 'var(--neon-red)' : 'var(--neon-green)';
-        }
-    }
-
-    if (btnCellContainer) {
-        btnCellContainer.addEventListener('click', () => {
-            currentLoadout = [...savedSquadConfig]; // Reset to saved
-            selectedLoadoutSlot = null;
-            mainMenu.classList.add('hidden');
-            cellContainerScreen.classList.remove('hidden');
-            initCellContainer();
-        });
-    }
-
-    if (btnLoadoutSave) {
-        btnLoadoutSave.addEventListener('click', () => {
-            // Validation: Ensure all slots filled
-            if (currentLoadout.some(id => !id)) {
-                updateLoadoutMessage("All slots must be filled!", "red");
-                return;
-            }
-
-            savedSquadConfig = [...currentLoadout];
-            console.log("SQUAD SAVED:", savedSquadConfig);
-
-            cellContainerScreen.classList.add('hidden');
-            mainMenu.classList.remove('hidden');
-        });
-    }
-
     // --- INTEGRATION: Adding touch listeners to elements ---
     // Modified createMonsterDOM and spawnPellicleTokens to include touch listeners
 
-    function getNeighbors(index) {
-        if (index === 0) return [1, 2];
-        if (index === 1) return [0, 2, 3];
-        if (index === 2) return [0, 1, 4];
-        if (index === 3) return [1, 4];
-        if (index === 4) return [2, 3];
-        return [];
-    }
-
     function getBestSplashTarget(neighborIndices, team) {
-        // 1. Filter Alive Neighbors (IGNORE RESERVES)
+        // 1. Filter Alive Neighbors
         let candidates = neighborIndices.map(idx => ({ index: idx, monster: team[idx] }))
-            .filter(c => !c.monster.isDead && c.index < 3);
+            .filter(c => !c.monster.isDead);
 
 
         if (candidates.length === 0) return null;

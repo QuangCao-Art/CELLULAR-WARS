@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CELLULAR WARS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="game-container">
+        <!-- Main Menu Screen -->
+        <div id="main-menu" class="screen active">
+            <h1 class="game-title">CELLULAR <span class="neon-text">WARS</span></h1>
+            <div class="menu-options">
+                <button id="btn-start" class="btn-neon">START BATTLE</button>
+                <button id="btn-collection" class="btn-neon">DATABASE</button>
+            </div>
+            <div class="version">Prototype v0.1</div>
+        </div>
+
+        <!-- Database Screen -->
+        <div id="database-screen" class="screen hidden">
+            <h2 class="screen-title">CELLULAR <span class="neon-text">DATA</span></h2>
+
+            <div class="database-container">
+                <div class="db-section">
+                    <h3>📌 QUICK START</h3>
+                    <ul class="db-list">
+                        <li><strong>Vanguard Role:</strong> Must be hit first. Protects the Wings.</li>
+                        <li><strong>Pellicles (P):</strong> Act as both energy and health.</li>
+                        <li><strong>Reinforce:</strong> Gain 2P per turn to distribute.</li>
+                        <li><strong>Overload:</strong> 6+ Pellicles = <strong>BOOM!</strong> (Explodes).</li>
+                        <li><strong>Last Stand:</strong> Final monster becomes immune to Overload.</li>
+                    </ul>
+                </div>
+
+                <div class="db-section">
+                    <h3>🦖 MONSTERS</h3>
+                    <div class="monster-grid">
+                        <!-- Nitrophil Card -->
+                        <div class="db-monster-card">
+                            <img src="Images/Nitrophil.png" alt="Nitrophil">
+                            <h4>Nitrophil</h4>
+                            <div class="db-ability">
+                                <span class="label">ATTACK ABILITY</span>
+                                <p>Nitro Blast (2P): Destroy 1 Pellicle + splash 1 damage to neighbors.</p>
+                            </div>
+                            <div class="db-ability">
+                                <span class="label">PELLICLE ABILITY</span>
+                                <p>Reactive Membrane: Reflect 1 damage to attacker when hit.</p>
+                            </div>
+                        </div>
+
+                        <!-- Lydrosome Card -->
+                        <div class="db-monster-card">
+                            <img src="Images/Lydrosome.png" alt="Lydrosome">
+                            <h4>Lydrosome</h4>
+                            <div class="db-ability">
+                                <span class="label">ATTACK ABILITY</span>
+                                <p>Hydro Shot (2P): Bypass Vanguard to hit Wings directly.</p>
+                            </div>
+                            <div class="db-ability">
+                                <span class="label">PELLICLE ABILITY</span>
+                                <p>Osmotic Flow: Transfer Pellicles to allies during Reinforce Phase.</p>
+                            </div>
+                        </div>
+
+                        <!-- Canobolus Card -->
+                        <div class="db-monster-card">
+                            <img src="Images/Canobolus.png" alt="Canobolus">
+                            <h4>Canobolus</h4>
+                            <div class="db-ability">
+                                <span class="label">ATTACK ABILITY</span>
+                                <p>Ballistic Volley (XP): Burn all X Pellicles to destroy X enemy Pellicles.</p>
+                            </div>
+                            <div class="db-ability">
+                                <span class="label">PELLICLE ABILITY</span>
+                                <p>Root Synergy: Receive +1 bonus Pellicle when reinforced.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="db-footer">
+                <button id="btn-db-rulebook" class="btn-neon">RULEBOOK</button>
+                <button id="btn-db-back" class="btn-neon">BACK TO MENU</button>
+            </div>
+        </div>
+
+        <!-- RuleBook Screen -->
+        <div id="rulebook-screen" class="screen hidden">
+            <h2 class="screen-title">CELLULAR <span class="neon-text">RULEBOOK</span></h2>
+
+            <div class="rulebook-container">
+                <div class="rb-section">
+                    <h3>1. SETUP - TRIANGLE FORMATION</h3>
+                    <p>3 Monsters arranged in a Triangle (1 Vanguard - 2 Wings).</p>
+                    <ul>
+                        <li><strong>Vanguard:</strong> At the front. Takes direct hits. Opponents MUST attack this
+                            position first (unless using bypass/AOE skills).</li>
+                        <li><strong>Wings:</strong> Provide support at the back. Protected by the Vanguard.</li>
+                        <li><strong>Vitality (Pellicle):</strong> Each Monster starts with 1 default Pellicle.</li>
+                    </ul>
+                </div>
+
+                <div class="rb-section">
+                    <h3>2. PELLICLE RULES (MEMBRANE SYSTEM)</h3>
+                    <ul>
+                        <li><strong>Reinforce:</strong> Receive 2 Pellicles at the start of each turn to distribute (Max
+                            2 Pellicles per turn).</li>
+                        <li><strong>Overload Threshold:</strong> Max 5 Pellicles per Monster. Receiving a 6th point ->
+                            <strong>AUTO-EXPLODE (OUT)</strong>.
+                        </li>
+                        <li><strong>Chain Reaction:</strong> When a monster explodes, it deals 1 damage to adjacent
+                            allies.</li>
+                    </ul>
+                </div>
+
+                <div class="rb-section">
+                    <h3>3. TURN STRUCTURE (PHASES)</h3>
+                    <ol>
+                        <li><strong>Reinforce Phase:</strong> Receive 2 Pellicles and distribute them.</li>
+                        <li><strong>Ability Phase:</strong> Activate support or passive abilities.</li>
+                        <li><strong>Attack Phase:</strong> Choose <strong>only 1</strong> Monster to attack.</li>
+                    </ol>
+                </div>
+
+                <div class="rb-section">
+                    <h3>4. THE LAST STAND (Final Monster)</h3>
+                    <ul>
+                        <li><strong>Unstable Trait:</strong> Immune to Overload (can accumulate >5 Pellicles).</li>
+                        <li><strong>Energy:</strong> Receive 3 Pellicles during the Reinforce Phase.</li>
+                        <li><strong>Actions:</strong> Granted the right to Attack <strong>2 times</strong> per turn.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <button id="btn-rb-back" class="btn-neon">BACK</button>
+        </div>
+
+        <!-- Game Board Screen (Hidden by default) -->
+        <div id="game-board" class="screen hidden">
+            <button id="btn-battle-back" class="btn-shortcut left-top"><img src="Images/Back.png" alt="Back"></button>
+            <button id="btn-battle-db" class="btn-shortcut right-top"><img src="Images/Book.png"
+                    alt="Database"></button>
+
+            <div class="battlefield">
+                <div id="effects-overlay"></div>
+                <div id="pellicle-layer"></div>
+                <!-- Enemy Triangle (Top) -->
+                <div class="team-formation enemy-team">
+                    <div class="triangle-row back-row">
+                        <div class="slot wing" data-pos="wing-left"></div>
+                        <div class="slot wing" data-pos="wing-right"></div>
+                    </div>
+                    <div class="triangle-row front-row">
+                        <div class="slot vanguard" data-pos="vanguard"></div>
+                    </div>
+                </div>
+
+                <!-- Center Area -->
+                <div class="center-zone">
+                    <div class="vs-container">
+                        <div class="turn-counter">FIRST CELL DIVISION</div>
+                        <div class="phase-display" id="phase-msg">REINFORCE PHASE</div>
+                        <div class="phase-sub-text" id="phase-sub-msg">DRAG PELLICLE TO REINFORCE</div>
+                    </div>
+                </div>
+
+                <!-- Player Triangle (Bottom) -->
+                <div class="team-formation player-team">
+                    <div class="triangle-row front-row">
+                        <div class="slot vanguard" data-pos="vanguard">
+                            <!-- Placeholder for Nitrophil -->
+                            <div class="monster nitrophil">
+                                <div class="pellicle-ring layer-1"></div>
+                                <img src="Images/Nitrophil.png" alt="Nitrophil">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="triangle-row back-row">
+                        <div class="slot wing" data-pos="wing-left">
+                            <!-- Placeholder for Lydrosome -->
+                            <div class="monster lydrosome">
+                                <div class="pellicle-ring layer-1"></div>
+                                <img src="Images/Lydrosome.png" alt="Lydrosome">
+                            </div>
+                        </div>
+                        <div class="slot wing" data-pos="wing-right">
+                            <!-- Placeholder for Canobolus -->
+                            <div class="monster canobolus">
+                                <div class="pellicle-ring layer-1"></div>
+                                <img src="Images/Canobolus.png" alt="Canobolus">
+                            </div>
+                        </div>
+                    </div>
+                    <div id="battle-log">WAITING FOR ACTION...</div>
+                </div>
+                <button id="end-turn-btn" class="btn-neon hidden">END TURN</button>
+                <button id="start-action-btn" class="btn-neon hidden">ATTACK</button>
+                <!-- Ability Tooltip -->
+                <div id="ability-tooltip" class="tooltip hidden">
+                    <h3 id="tooltip-name">Monster Name</h3>
+                    <div class="tooltip-section">
+                        <span class="tooltip-label">ATTACK ABILITY:</span>
+                        <span id="tooltip-attack">Ability Description</span>
+                    </div>
+                    <div class="tooltip-section">
+                        <span class="tooltip-label">PELLICLE ABILITY:</span>
+                        <span id="tooltip-passive">Passive Description</span>
+                    </div>
+                </div>
+            </div>
+            <!-- INFO PANEL (Desktop/Landscape Only) -->
+            <div id="info-panel" class="hidden">
+                <div class="panel-header">
+                    <h2 id="panel-name">SELECT MONSTER</h2>
+                </div>
+                <div class="monster-preview-container">
+                    <img id="panel-img" src="" alt="" class="hidden">
+                </div>
+                <div class="panel-stats">
+                    <div class="stat-row">
+                        <span class="stat-label">PELLICLES:</span>
+                        <span id="panel-pellicle" class="stat-value">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">STATUS:</span>
+                        <span id="panel-status" class="stat-value">-</span>
+                    </div>
+                </div>
+                <div class="panel-abilities">
+                    <div class="ability-box">
+                        <h4 class="ability-title">ATTACK ABILITY</h4>
+                        <p id="panel-attack" class="ability-desc">Hover over a monster to see details.</p>
+                    </div>
+                    <div class="ability-box">
+                        <h4 class="ability-title">PASSIVE ABILITY</h4>
+                        <p id="panel-passive" class="ability-desc">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Overlay (Moved to root to allow full board blur) -->
+        <div id="game-over-overlay" class="hidden">
+            <div class="overlay-content">
+                <h2 id="game-over-msg">DIVISION SUCCESS</h2>
+                <p>RETURNING TO BASE</p>
+            </div>
+        </div>
+
+        <!-- DEBUG BUTTON -->
+        <button id="btn-test-scenario" onclick="window.setupTestScenario()"
+            style="position:fixed; bottom:10px; right:10px; z-index:99999; opacity:0.5;">DEBUG</button>
+
+        <script src="game.js"></script>
+</body>
+
+</html>

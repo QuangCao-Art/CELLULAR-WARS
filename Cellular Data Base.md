@@ -10,12 +10,14 @@ This document serves as the central repository for recording data and informatio
     2. **Ability (Kỹ năng)**: Chuyển Pellicle hoặc dùng nội tại.
     3. **Action (Tấn công)**: Chọn 1 quái vật để bắn (Tốn Pellicle).
 - **Cơ chế Overload**: Nếu con nào nhận hạt Pellicle thứ 6 -> **TỰ NỔ**, gây sát thương lan cho đồng đội bên cạnh.
-- **The Last Stand**: Khi chỉ còn 1 con cuối cùng, nó nhận 3 Pellicle/lượt, không bao giờ bị Overload và được tấn công 2 lần/lượt.
 
 ## 🦖 MONSTER SUMMARY (TÓM TẮT QUÁI VẬT)
 - **Nitrophil**: Phản sát thương khi bị đánh. Kỹ năng chủ động gây nổ lan.
 - **Lydrosome**: Chuyền Pellicle cho đồng đội. Kỹ năng chủ động bắn xuyên Vanguard.
-- **Canobolus**: Nhận thêm +1 Pellicle khi được nạp. Kỹ năng chủ động bắn nhiều phát liên tiếp (Dựa trên số Pellicle đang có).
+- **Canobolus**: Nhận thêm +1 Pellicle khi được nạp. Kỹ năng chủ động bắn nhiều phát liên tiếp.
+- **Kerashell**: Cỗ xe tăng với lớp vỏ Keratin. Bắt đầu với 2 màng (Vanguard).
+- **Mitonegy**: Nhà máy năng lượng. Hồi màng cho đồng đội và tặng Pellicle khi vào trận.
+- **Chlarob**: Ký sinh đột biến. Cướp Pellicle của đối thủ và để lại quà khi bị hạ.
 
 ## 🧬 CELLULAR WARS: RULEBOOK
 
@@ -56,17 +58,19 @@ This document serves as the central repository for recording data and informatio
 *   **Lượt 1 (Người đi sau)**: Được phép dùng Pellicle Ability (tự vệ) nhưng vẫn khóa Attack Ability.
 *   **Từ lượt 2 trở đi**: Mở khóa hoàn toàn.
 
-### 6. CHIẾN THUẬT CỐT LÕI
+### 6. QUY TẮC KHU VỰC DỰ BỊ (RESERVE AREA)
+*   **Không chiến đấu (Non-Combat)**: Monsters ở Reserve (Index 3 & 4) **không thể tấn công** và **không thể bị tấn công** (Untargetable).
+*   **Không nạp (No Reinforce)**: Không thể nhận Pellicle tokens trực tiếp từ giai đoạn Nạp.
+*   **Ngừng kích hoạt (Dormant)**: Toàn bộ kỹ năng (Active/Passive) bị vô hiệu hóa. Đồng thời **không bị ảnh hưởng bởi Overload** (Immune to Explosion).
+*   **Bảo toàn năng lượng**: Khi thực hiện Tactical Swap, Oddie giữ nguyên số lượng Pellicle hiện có.
+*   **Miễn nhiễm sát thương lan**: Không nhận sát thương từ Chain Reaction của đồng đội bên cạnh.
+
+### 7. CHIẾN THUẬT CỐT LÕI
 *   **Quản lý rủi ro**: Tấn công càng mạnh thì tự vệ càng yếu (vì đốt sạch Pellicle).
 *   **Ép Overload**: Sử dụng thẻ bài hoặc kỹ năng để bơm "thừa" Pellicle cho đối thủ, khiến chúng tự nổ.
 *   **Lọc máu**: Hy sinh Nitrophil để bào mòn đội hình địch bằng phản sát thương, dồn tài nguyên cho Canobolus dứt điểm.
 *   **Điều kiện thắng**: Loại bỏ toàn bộ 3 Monster của đối phương.
 
-### 7. THE LAST STAND (Khi bạn chỉ còn 1 Monster duy nhất)
-*   **Độc cô cầu bại (Unstable Trait)**: Monster cuối cùng trở nên "Bất ổn định". **Miễn nhiễm Overload**. Có thể tích tụ >5 Pellicle mà không bị nổ.
-*   **Năng lượng**: Nhận **3 Pellicle** mỗi lượt nạp.
-*   **Hành động**: Được quyền Tấn công **2 lần** (Mỗi lần chọn 1 mục tiêu khác nhau hoặc dồn vào 1 mục tiêu).
-*   **Cái giá**: Mỗi lần tấn công vẫn phải trả phí Pellicle Burn như bình thường.
 
 ---
 
@@ -100,11 +104,11 @@ This document serves as the central repository for recording data and informatio
 
 ## 🔒 BACKLOG (DỮ LIỆU ĐỂ DÀNH)
 
-**Team B: GLITCH (Sức mạnh & Cướp đoạt)**
+**Team B: THE SCAVENGER STRAIN (Momentum & Resource Control)**
 
-| Monster | Vai trò | Attack Ability | Pellicle Ability (Nội tại) |
+| Monster | Origin (Nguồn gốc & Ý nghĩa) | Attack Ability (Chủ động) | Pellicle Ability (Nội tại) |
 | :--- | :--- | :--- | :--- |
-| **Militon** | Tanker | **Big Slam (2P)**: Sát thương lớn (2 màng). | **Bodyguard**: Buộc địch đánh mình trước. |
-| **Glubess** | Tiếp tế | **Sugar Rush (2P)**: Đánh & Hồi màng. | **Free Gift**: Tặng Pellicle khi vào trận. |
-| **Virob** | Quấy rối | **Quick Rob (2P)**: Đánh & Cướp Pellicle. | **Loot Drop**: Chết là để lại "di chúc" P.
+| **Kerashell** | **Keratin + Shell**: Lớp vỏ cấu tạo từ tế bào sừng siêu cứng. Một cỗ xe tăng sinh học thực thụ, cực kỳ bền bỉ. | **Light Strike (1P)**: Phá 1 màng mục tiêu. (Rẻ, thực dụng, tấn công liên tục). | **Vanguard**: Bắt đầu trận đấu với 2 màng sẵn có. |
+| **Mitonegy** | **Mitochondria + Energy**: Nhà máy năng lượng sống. Chuyên điều phối và tái tạo Pellicle cho đồng đội. | **Auto-Repair (2P)**: Phá 1 màng đối thủ. Tự hồi 1 màng cho đồng đội ít P nhất. | **Free Gift**: Vào trận, tặng ngay mỗi đồng đội +1P. |
+| **Chlarob** | **Chlamydia + Rob**: Vi khuẩn ký sinh đột biến. Chuyên thâm nhập và đánh cắp Pellicle từ bên trong đối thủ. | **Quick Rob (2P)**: Phá 1 màng. Cướp luôn 1P của đối thủ về cho mình. | **Loot Drop**: Khi bị OUT, +1P cho đồng đội có số P ít nhất. |
 
