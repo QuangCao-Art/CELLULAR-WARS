@@ -6,6 +6,8 @@
     --neon-green: #0aff00;
     --neon-red: #ff0055;
     --glass-panel: rgba(255, 255, 255, 0.05);
+    --bf-scale: 1;
+    /* Centralized scale tracking */
 }
 
 * {
@@ -41,6 +43,11 @@ body {
 /* UTILITIES */
 .hidden {
     display: none !important;
+}
+
+.invisible {
+    visibility: hidden !important;
+    pointer-events: none;
 }
 
 .screen {
@@ -186,15 +193,16 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    perspective: 1000px;
     position: relative;
     gap: 10px;
     width: 100%;
     min-height: 500px;
-    transform: translateY(-15%);
-    /* Shift up as requested */
+    top: -50px;
     padding-bottom: 80px;
-    /* Space for absolute buttons */
+    transform: scale(var(--bf-scale)) translate3d(0, 0, 0);
+    /* Force layer & stable 2D context */
+    will-change: transform;
+    transform-origin: center center;
 }
 
 #pellicle-layer {
@@ -239,8 +247,8 @@ body {
 }
 
 .team-formation {
-    width: 400px;
-    height: 300px;
+    width: 440px;
+    height: 250px;
     position: relative;
     transition: transform 0.5s ease;
     margin: 10px 0;
@@ -255,12 +263,12 @@ body {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 110%;
-    height: 110%;
+    width: 135%;
+    height: 135%;
     transform: translate(-50%, -50%);
     z-index: -1;
     pointer-events: none;
-    background-image: url('Images/PentagonPosition.png');
+    background-image: url('Images/TrianglePosition.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -306,6 +314,11 @@ body {
     /* Fly in then Float */
     animation: pel-spawn 0.6s ease-out both,
         pel-float 3s ease-in-out 0.6s infinite;
+    pointer-events: auto;
+}
+
+.pellicle-token.flying {
+    animation: none !important;
 }
 
 .pellicle-token:active {
@@ -331,7 +344,7 @@ body {
     justify-content: center;
     align-items: center;
     transition: all 0.3s ease;
-    --slot-transform: none;
+    --slot-transform: translate(0, 0);
     transform: var(--slot-transform);
 }
 
@@ -340,7 +353,7 @@ body {
     --monster-rotation: 180deg;
 }
 
-/* PENTAGON POSITIONING (Relative to container) */
+/* TRIANGLE POSITIONING */
 .slot[data-index="0"] {
     /* Vanguard */
     top: 10px;
@@ -350,26 +363,14 @@ body {
 
 .slot[data-index="1"] {
     /* Wing Left */
-    top: 80px;
-    left: 65px;
+    top: 140px;
+    left: 60px;
 }
 
 .slot[data-index="2"] {
     /* Wing Right */
-    top: 80px;
-    right: 65px;
-}
-
-.slot[data-index="3"] {
-    /* Reserve Left */
-    top: 190px;
-    left: 100px;
-}
-
-.slot[data-index="4"] {
-    /* Reserve Right */
-    top: 190px;
-    right: 100px;
+    top: 140px;
+    right: 60px;
 }
 
 
@@ -445,6 +446,50 @@ body {
     }
 }
 
+/* PP Receival Animation - Target IMAGE */
+.monster img.pp-absorb {
+    animation: pp-absorb-anim 0.4s ease-out;
+    transition: none !important;
+    will-change: transform;
+}
+
+@keyframes pp-absorb-anim {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+
+/* LOW PP WARNING */
+.monster.low-pp {
+    /* Container remains clean, glow moves to image */
+    box-shadow: none;
+    border: none;
+}
+
+.monster.low-pp img {
+    animation: none;
+    filter: drop-shadow(0 0 10px var(--neon-red));
+}
+
+@keyframes critical-pulse {
+    from {
+        filter: drop-shadow(0 0 5px var(--neon-red)) grayscale(0.2);
+    }
+
+    to {
+        filter: drop-shadow(0 0 20px var(--neon-red)) brightness(1.2);
+    }
+}
+
 .death-x {
     position: absolute;
     top: 50%;
@@ -502,6 +547,33 @@ body {
     animation: shake 0.2s cubic-bezier(.36, .07, .19, .97) both;
 }
 
+.screen-shake {
+    animation: screen-shake 0.2s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+@keyframes screen-shake {
+
+    0%,
+    100% {
+        transform: scale(var(--bf-scale)) translate3d(0, 0, 0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: scale(var(--bf-scale)) translate3d(-2px, 0, 0);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: scale(var(--bf-scale)) translate3d(2px, 0, 0);
+    }
+}
+
 @keyframes shake {
 
     10%,
@@ -528,60 +600,97 @@ body {
 
 /* HIT EFFECTS */
 .hit-flash {
-    animation: hit-flash-shake 0.3s;
+    animation: hit-flash-shake 0.3s !important;
+    transition: none !important;
+    will-change: transform, filter;
+    z-index: 100;
 }
 
 /* Light Hit (For Multi-Shot) */
 .hit-light {
-    animation: hit-flash-light 0.2s;
+    animation: hit-flash-light 0.2s !important;
     position: relative;
 }
 
 @keyframes hit-flash-light {
     0% {
         filter: sepia(100%) hue-rotate(-50deg) saturate(300%) brightness(1.2);
-        transform: translate(0, 0);
+        transform: translate(0, 0) rotate(var(--monster-rotation, 0deg));
     }
 
     25% {
-        transform: translate(-2px, 2px);
+        transform: translate(-2px, 2px) rotate(var(--monster-rotation, 0deg));
     }
 
     50% {
-        transform: translate(2px, -2px);
+        transform: translate(2px, -2px) rotate(var(--monster-rotation, 0deg));
     }
 
     75% {
-        transform: translate(-1px, -1px);
+        transform: translate(-1px, -1px) rotate(var(--monster-rotation, 0deg));
     }
 
     100% {
         filter: none;
-        transform: translate(0, 0);
+        transform: translate(0, 0) rotate(var(--monster-rotation, 0deg));
     }
 }
 
 @keyframes hit-flash-shake {
     0% {
         filter: brightness(3) sepia(1) hue-rotate(-50deg) saturate(5);
-        transform: translate(0, 0);
+        transform: translate(0, 0) rotate(var(--monster-rotation, 0deg));
     }
 
     25% {
-        transform: translate(-5px, 5px) rotate(5deg);
+        transform: translate(-8px, 8px) rotate(var(--monster-rotation, 0deg));
     }
 
     50% {
-        transform: translate(5px, -5px) rotate(-5deg);
+        transform: translate(8px, -8px) rotate(var(--monster-rotation, 0deg));
     }
 
     75% {
-        transform: translate(-5px, -5px) rotate(5deg);
+        transform: translate(-8px, -8px) rotate(var(--monster-rotation, 0deg));
     }
 
     100% {
         filter: none;
-        transform: translate(0, 0) rotate(0);
+        transform: translate(0, 0) rotate(var(--monster-rotation, 0deg));
+    }
+}
+
+/* DEATH EFFECT */
+.death-anim {
+    animation: death-implode 0.5s ease-out forwards;
+}
+
+@keyframes death-implode {
+    0% {
+        transform: translate(0, 0) rotate(var(--monster-rotation, 0deg));
+        opacity: 1;
+        filter: grayscale(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translate(-3px, 0) rotate(var(--monster-rotation, 0deg));
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translate(3px, 0) rotate(var(--monster-rotation, 0deg));
+    }
+
+    100% {
+        transform: translate(0, 0) rotate(var(--monster-rotation, 0deg));
+        opacity: 0;
+        filter: grayscale(1);
     }
 }
 
@@ -1073,11 +1182,16 @@ body {
 }
 
 /* Drag & Drop Visuals */
+/* Drag & Drop Visuals - Modified to Glow Monster instead of Slot Box */
 .slot.drag-over {
-    border-color: var(--neon-green);
-    box-shadow: 0 0 20px var(--neon-green), inset 0 0 10px var(--neon-green);
-    background: rgba(10, 255, 0, 0.1);
-    transform: var(--slot-transform) scale(1.1);
+    /* Removed box styling */
+    /* Scale only the monster via the other rule, NOT the slot itself to avoid coordinate shifts */
+    transform: var(--slot-transform);
+}
+
+.slot.drag-over .monster img {
+    filter: drop-shadow(0 0 20px var(--neon-green)) brightness(1.3);
+    transition: filter 0.2s;
 }
 
 /* Enemy Target Lock Visual */
@@ -1129,9 +1243,21 @@ body {
 
 /* GAME OVER SEQUENCE */
 .blur-focus {
-    filter: blur(8px) grayscale(40%);
-    transition: filter 1.5s ease;
+    filter: blur(5px);
+    transition: filter 2s ease;
 }
+
+/* OVERRIDE: Button Positioning Alignment */
+#btn-end-turn,
+#btn-end-action,
+#btn-end-reinforce {
+    position: absolute;
+    bottom: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+}
+
 
 #game-over-overlay {
     position: fixed;
@@ -1376,6 +1502,8 @@ body {
     align-items: center;
     background: radial-gradient(circle at center, #0a152a 0%, #050a14 100%);
     overflow: hidden;
+    z-index: 9000;
+    /* Ensure it hides the battlefield */
 }
 
 .screen-title {
@@ -1668,6 +1796,15 @@ body {
     justify-content: flex-start;
 }
 
+#rulebook-screen {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    align-items: center;
+    background: radial-gradient(circle at center, #0a152a 0%, #050a14 100%);
+    z-index: 9000;
+}
+
 .rulebook-container {
     flex: 1;
     overflow-y: auto;
@@ -1763,9 +1900,8 @@ body {
 
     /* Scaling Battlefield for Portrait */
     .battlefield {
-        transform: scale(0.7);
+        --bf-scale: 0.7;
         /* More aggressive scaling */
-        transform-origin: center center;
     }
 
     .team-formation {
@@ -1849,7 +1985,7 @@ body {
     .battlefield {
         flex-direction: row;
         gap: 50px;
-        transform: scale(0.7);
+        --bf-scale: 0.7;
     }
 
     .center-zone {
@@ -1907,9 +2043,7 @@ body {
         justify-content: center;
         align-items: center;
         /* SCALING UP FOR DESKTOP */
-        /* Reduced from 1.3 to 1.05 to give more breathing room (top/bottom edges) */
-        transform: scale(1.05);
-        transform-origin: center center;
+        --bf-scale: 1.05;
     }
 
     /* SIDEBAR CONTAINER */
@@ -2040,10 +2174,9 @@ body {
     }
 
     /* REPOSITION SHORTCUT BUTTONS FOR DESKTOP */
-    /* Shift the Database button (Right-Top) to the left of the Info Panel */
+    /* Align Database button to the right of the main game area */
     .btn-shortcut.right-top {
-        right: 430px;
-        /* 400px (Panel) + 30px (Padding) */
+        right: 20px;
     }
 }
 
@@ -2320,6 +2453,85 @@ body {
     filter: grayscale(100%);
 }
 
+/* FIX: Prevent Drag-Over Rotation/Shift (CORRECTED) */
+.slot.drag-over .monster {
+    /* Keep rotation consistent, just scale slightly */
+    transform: rotate(var(--monster-rotation)) scale(1.1) !important;
+}
+
+/* FIX: Action Badge Styling (Prevent Shift & Fix Mirroring) */
+.action-badge {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    /* Use the same rotation variable as the monster to ensure text is upright */
+    transform: translate(-50%, -50%) rotate(var(--monster-rotation, 0deg));
+
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.8rem;
+    color: var(--neon-red);
+    text-shadow: 0 0 5px black, 0 0 10px var(--neon-red);
+    pointer-events: none;
+    z-index: 200;
+    white-space: nowrap;
+
+    /* Animation for pop-in */
+    animation: badge-pop 0.2s ease-out forwards;
+}
+
+@keyframes badge-pop {
+    0% {
+        transform: translate(-50%, -50%) rotate(var(--monster-rotation, 0deg)) scale(0);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translate(-50%, -50%) rotate(var(--monster-rotation, 0deg)) scale(1);
+        opacity: 1;
+    }
+}
+
+/* HEAVY CONTAINER DROP ANIMATION */
+.enemy-team .monster img {
+    --drop-y: 40px;
+}
+
+.monster img {
+    --drop-y: -40px;
+}
+
+.heavy-drop {
+    animation: container-drop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    transform-origin: bottom;
+}
+
+@keyframes container-drop {
+    0% {
+        transform: translateY(var(--drop-y)) scaleX(0.8) scaleY(1.3);
+        opacity: 0;
+    }
+
+    45% {
+        /* HEAVY IMPACT FRAME */
+        transform: translateY(0) scaleX(1.25) scaleY(0.6);
+        opacity: 1;
+    }
+
+    65% {
+        transform: translateY(calc(var(--drop-y) * -0.06)) scaleX(0.98) scaleY(1.05);
+        /* Damped bounce */
+    }
+
+    85% {
+        transform: translateY(0) scaleX(1.02) scaleY(0.97);
+    }
+
+    100% {
+        transform: translateY(0) scale(1);
+        opacity: 0.75;
+    }
+}
+
 .menu-footer {
     display: flex;
     flex-direction: column;
@@ -2327,4 +2539,219 @@ body {
     margin-top: 10px;
     width: 100%;
     gap: 10px;
+}
+
+/* --- CELL CONTAINER ENHANCEMENTS --- */
+
+/* 1. Drag Target Glow & Vanguard Growth */
+.loadout-slot.drag-target-glow {
+    box-shadow: 0 0 25px var(--neon-blue), inset 0 0 15px var(--neon-blue) !important;
+    border: 3px solid var(--neon-blue) !important;
+    background: rgba(0, 50, 255, 0.2) !important;
+    z-index: 100 !important;
+    transition: all 0.1s ease !important;
+    transform: scale(1) !important;
+}
+
+.loadout-slot.drag-target-glow[data-role="Vanguard"] {
+    transform: scale(1.3) !important;
+}
+
+/* 2. Loadout Tooltip (Brief Hover) */
+.loadout-tooltip {
+    position: fixed;
+    background: rgba(0, 5, 20, 0.95);
+    border: 1px solid var(--neon-blue);
+    padding: 15px 22px;
+    border-radius: 12px;
+    pointer-events: none;
+    z-index: 2000;
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+    backdrop-filter: blur(5px);
+    max-width: 335px;
+}
+
+.loadout-tooltip h4 {
+    margin: 0 0 5px 0;
+    color: var(--neon-blue);
+    font-family: "Orbitron", sans-serif;
+    font-size: 0.9rem;
+}
+
+.loadout-tooltip p {
+    margin: 0;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.4;
+}
+
+/* 3. Loadout Modal (Full Info) */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 3000;
+}
+
+.modal-bg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+}
+
+.modal-content {
+    position: relative;
+    background: linear-gradient(135deg, #0a152a 0%, #050a14 100%);
+    border: 2px solid var(--neon-blue);
+    border-radius: 20px;
+    padding: 50px;
+    width: 90%;
+    max-width: 660px;
+    box-shadow: 0 0 40px rgba(0, 243, 255, 0.2);
+    animation: modal-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modal-pop {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.modal-close:hover {
+    opacity: 1;
+}
+
+.modal-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.modal-header img {
+    width: 120px;
+    height: 120px;
+    filter: drop-shadow(0 0 15px var(--neon-blue));
+    margin-bottom: 15px;
+}
+
+.modal-header h2 {
+    font-family: "Orbitron", sans-serif;
+    color: var(--neon-blue);
+    margin: 0;
+    font-size: 1.75rem;
+    letter-spacing: 2px;
+}
+
+.modal-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    border-left: 3px solid var(--neon-blue);
+}
+
+.modal-label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--neon-blue);
+    font-weight: bold;
+    font-family: "Orbitron", sans-serif;
+    margin-bottom: 5px;
+}
+
+.modal-section p {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+
+
+/* Revised Tooltip Styling for Dual Trails */
+.loadout-tooltip .tooltip-trail {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin-top: 5px;
+    line-height: 1.3;
+    display: block;
+}
+
+/* Color Highlighting for Trails */
+.offensive {
+    color: var(--neon-red) !important;
+}
+
+.pellicle {
+    color: var(--neon-green) !important;
+}
+
+/* Ability Interaction Visuals */
+.selected-glow {
+    box-shadow: 0 0 20px var(--neon-blue), inset 0 0 10px var(--neon-blue) !important;
+    border: 2px solid var(--neon-blue) !important;
+    animation: SelectedPulse 1s infinite alternate;
+}
+
+@keyframes SelectedPulse {
+    from {
+        filter: brightness(1);
+    }
+
+    to {
+        filter: brightness(1.5);
+    }
+}
+
+.ability-activation {
+    animation: AbilityPop 0.5s ease-out;
+}
+
+@keyframes AbilityPop {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.15);
+        filter: brightness(2) drop-shadow(0 0 15px white);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Section Borders for Modal */
+.border-offensive {
+    border-left: 3px solid var(--neon-red) !important;
+}
+
+.border-pellicle {
+    border-left: 3px solid var(--neon-green) !important;
 }

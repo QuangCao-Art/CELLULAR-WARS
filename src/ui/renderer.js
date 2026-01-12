@@ -33,20 +33,48 @@ export function updatePhaseUI() {
         updateBattleLog(`PHASE START: ${gameState.currentPhase}`);
     }
 
-    if (selectors.currentPhaseEl) selectors.currentPhaseEl.innerText = gameState.currentPhase;
+    if (selectors.currentPhaseEl) {
+        selectors.currentPhaseEl.innerText = gameState.currentPhase;
+        if (gameState.isAITurn) {
+            selectors.currentPhaseEl.style.color = 'var(--neon-red)';
+            selectors.currentPhaseEl.style.textShadow = '0 0 10px var(--neon-red)';
+        } else {
+            selectors.currentPhaseEl.style.color = ''; // Revert to CSS default
+            selectors.currentPhaseEl.style.textShadow = '';
+        }
+    }
     if (selectors.turnNumberEl) selectors.turnNumberEl.innerText = gameState.turnNumber;
 
     if (selectors.instructionMsg) {
         if (gameState.currentPhase === 'REINFORCE') {
             selectors.instructionMsg.innerText = `Pool: ${gameState.pelliclePool}P | Drag tokens to monsters.`;
         } else if (gameState.currentPhase === 'ACTION') {
-            selectors.instructionMsg.innerText = gameState.actionTaken ? "Action used. End turn?" : "Drag monster to enemy to attack, or swap slots.";
+            selectors.instructionMsg.innerText = gameState.specialUsedThisTurn ? "Pellicle Trail used. Move to Attack Phase?" : "Click monster to use Pellicle Trail.";
+        } else if (gameState.currentPhase === 'ATTACK') {
+            if (gameState.turnNumber === 1) {
+                selectors.instructionMsg.innerText = "ACCLIMATION: Attacks Locked. End Turn to proceed.";
+            } else {
+                selectors.instructionMsg.innerText = gameState.attackUsedThisTurn ? "Attack used. End turn?" : "Drag monster to enemy to attack, or swap slots.";
+            }
         }
     }
 
     // Toggle Phase Buttons
-    if (selectors.btnEndReinforce) selectors.btnEndReinforce.classList.toggle('hidden', gameState.currentPhase !== 'REINFORCE');
-    if (selectors.btnEndTurn) selectors.btnEndTurn.classList.toggle('hidden', gameState.currentPhase !== 'ACTION');
+    if (selectors.btnEndReinforce) {
+        selectors.btnEndReinforce.classList.toggle('invisible', gameState.isAITurn || gameState.currentPhase !== 'REINFORCE');
+        if (gameState.currentPhase === 'REINFORCE' && !gameState.isAITurn) {
+            selectors.btnEndReinforce.innerText = (gameState.turnNumber === 1) ? 'END FIRST TURN' : 'ACTION PHASE';
+        }
+    }
+    if (selectors.btnEndAction) {
+        selectors.btnEndAction.classList.toggle('invisible', gameState.isAITurn || gameState.currentPhase !== 'ACTION');
+    }
+    if (selectors.btnEndTurn) {
+        selectors.btnEndTurn.classList.toggle('invisible', gameState.isAITurn || gameState.currentPhase !== 'ATTACK');
+        if (gameState.currentPhase === 'ATTACK' && !gameState.isAITurn) {
+            selectors.btnEndTurn.innerText = (gameState.turnNumber === 1) ? 'END TURN (ACCLIMATION)' : 'END TURN';
+        }
+    }
 }
 
 export function getSlotElement(index, isPlayer) {
@@ -58,10 +86,10 @@ export function renderFormation(handlers = {}) {
     if (!selectors.playerFormation) return;
     selectors.playerFormation.innerHTML = '';
 
-    // Add Reserve Highlight Box
-    const highlight = document.createElement('div');
-    highlight.className = 'reserve-highlight-box';
-    selectors.playerFormation.appendChild(highlight);
+    // Re-add background zones
+    const zones = document.createElement('div');
+    zones.className = 'formation-zones';
+    selectors.playerFormation.appendChild(zones);
 
     gameState.playerTeam.forEach((monster, index) => {
         const slot = createSlotDOM(monster, index, true, handlers);
@@ -69,106 +97,143 @@ export function renderFormation(handlers = {}) {
     });
 }
 
-export function renderEnemyFormation() {
+export function renderEnemyFormation(handlers = {}) {
     if (!selectors.enemyFormation) return;
     selectors.enemyFormation.innerHTML = '';
 
-    // Add Reserve Highlight Box
-    const highlight = document.createElement('div');
-    highlight.className = 'reserve-highlight-box';
-    selectors.enemyFormation.appendChild(highlight);
+    const zones = document.createElement('div');
+    zones.className = 'formation-zones';
+    selectors.enemyFormation.appendChild(zones);
 
     gameState.enemyTeam.forEach((monster, index) => {
-        const slot = createSlotDOM(monster, index, false);
+        const slot = createSlotDOM(monster, index, false, handlers);
         selectors.enemyFormation.appendChild(slot);
     });
 }
 
 function createSlotDOM(monster, index, isPlayer, handlers = {}) {
     const slot = document.createElement('div');
-    slot.className = `slot ${index === 0 ? 'vanguard' : 'wing'}`;
+    slot.className = 'slot';
     slot.dataset.index = index;
+    const pos = index === 0 ? 'vanguard' : (index === 1 ? 'wing-left' : 'wing-right');
+    slot.dataset.pos = pos;
 
-    // Drag and Drop Listeners
-    if (handlers.handleDragOver) slot.addEventListener('dragover', handlers.handleDragOver);
-    if (handlers.handleDragEnter) slot.addEventListener('dragenter', handlers.handleDragEnter);
-    if (handlers.handleDragLeave) slot.addEventListener('dragleave', handlers.handleDragLeave);
-    if (handlers.handleDrop) slot.addEventListener('drop', (e) => handlers.handleDrop(e, index, isPlayer));
-
-    if (monster) {
-        const monsterDiv = createMonsterDOM(monster, index, isPlayer, handlers);
-        slot.appendChild(monsterDiv);
+    if (monster.isDead) {
+        slot.classList.add('dead');
+        slot.innerHTML = `<div class="monster dead">
+            <div class="death-marker">X</div>
+        </div>`;
+        return slot;
     }
+
+    const monsterDiv = document.createElement('div');
+    monsterDiv.className = 'monster';
+    if (monster.pellicle === 0 && !monster.isDead) {
+        monsterDiv.classList.add('vulnerable');
+    }
+    monsterDiv.dataset.id = monster.id;
+    monsterDiv.style.borderColor = monster.isLocked ? 'var(--neon-blue)' : '';
+
+    monsterDiv.innerHTML = `
+        <img src="Images/${monster.name.replace(/\s+/g, '')}.png" alt="${monster.name}">
+    `;
+
+    // 3. Pellicle Rings
+    const ringContainer = document.createElement('div');
+    ringContainer.className = 'pellicle-ring-container';
+    ringContainer.style.position = 'absolute';
+    ringContainer.style.top = '0';
+    ringContainer.style.left = '0';
+    ringContainer.style.width = '100%';
+    ringContainer.style.height = '100%';
+    ringContainer.style.pointerEvents = 'none';
+    monsterDiv.appendChild(ringContainer);
+
+    const renderCount = Math.min(monster.pellicle, 10);
+    for (let i = 0; i < renderCount; i++) {
+        const ring = document.createElement('div');
+        ring.classList.add('pellicle-ring');
+        if (!isPlayer) ring.classList.add('enemy-ring');
+        const scale = 0.6 + (i * 0.1);
+        ring.style.transform = `translate(-50%, -50%) scale(${scale})`;
+        ringContainer.appendChild(ring);
+    }
+
+    // 4. Pellicle Badge
+    const badge = document.createElement('div');
+    badge.classList.add('pellicle-count');
+    badge.innerText = monster.pellicle;
+    if (!isPlayer) {
+        badge.style.borderColor = "#ff9900";
+        badge.style.color = "#ff9900";
+        badge.style.boxShadow = "0 0 5px #ff9900";
+    }
+    if (monster.pellicle >= 5) {
+        badge.style.color = "var(--neon-red)";
+        badge.style.borderColor = "var(--neon-red)";
+    }
+    monsterDiv.appendChild(badge);
+
+    // Interaction handlers
+    if (isPlayer) {
+        monsterDiv.onclick = () => handlers.handleMonsterClick && handlers.handleMonsterClick(index);
+        monsterDiv.draggable = true;
+        monsterDiv.ondragstart = (e) => handlers.handleDragStart && handlers.handleDragStart(e, index);
+    }
+
+    monsterDiv.onmouseenter = () => handlers.handleMouseEnter && handlers.handleMouseEnter(monster, isPlayer, index);
+    monsterDiv.onmouseleave = () => handlers.handleMouseLeave && handlers.handleMouseLeave();
+
+    slot.appendChild(monsterDiv);
+
+    // Drop logic for slot
+    slot.ondragover = (e) => e.preventDefault();
+    slot.ondrop = (e) => {
+        e.preventDefault();
+        handlers.handleDrop && handlers.handleDrop(e, index, isPlayer);
+    };
 
     return slot;
 }
 
-function createMonsterDOM(monster, index, isPlayer, handlers = {}) {
-    const div = document.createElement('div');
-    div.className = 'monster';
-    if (monster.isDead) div.classList.add('dead');
+export function updateInfoPanel(monster, isPlayer) {
+    if (!selectors.infoPanel) return;
+    const { infoPanel } = selectors;
 
-    // SATURATION RULE: Reserves (3,4) are desaturated
-    if (index >= 3) {
-        div.style.filter = 'saturate(0.5)';
+    const nameEl = document.getElementById('panel-name');
+    const imgEl = document.getElementById('panel-img');
+    const pellicleEl = document.getElementById('panel-pellicle');
+    const statusEl = document.getElementById('panel-status');
+    const attackTitleEl = document.getElementById('panel-attack-title');
+    const attackEl = document.getElementById('panel-attack');
+    const passiveTitleEl = document.getElementById('panel-passive-title');
+    const passiveEl = document.getElementById('panel-passive');
+
+    if (!monster) {
+        if (nameEl) nameEl.innerText = "SQUAD INFO";
+        if (imgEl) imgEl.classList.add('hidden');
+        if (pellicleEl) pellicleEl.innerText = "- / -";
+        if (statusEl) statusEl.innerText = "SELECT UNIT";
+        if (attackEl) attackEl.innerText = "Hover over a monster to view its offensive capabilities.";
+        if (passiveEl) passiveEl.innerText = "Hover over a monster to view its specialized traits.";
+        return;
     }
 
-    const img = document.createElement('img');
-    const imgName = monster.name.replace(/\s+/g, '');
-    img.src = `Images/${imgName}.png`;
-    div.appendChild(img);
-
-    // Pellicle Counters
-    const counters = document.createElement('div');
-    counters.className = 'pellicle-counters';
-    for (let i = 0; i < monster.pellicle; i++) {
-        const p = document.createElement('div');
-        p.className = 'p-dot';
-        counters.appendChild(p);
+    if (nameEl) nameEl.innerText = monster.name;
+    if (imgEl) {
+        imgEl.src = `Images/${monster.name.replace(/\s+/g, '')}.png`;
+        imgEl.classList.remove('hidden');
     }
-    div.appendChild(counters);
-
-    // Ability Glow
-    if (isPlayer && gameState.selectedAbilitySourceIndex === index) {
-        div.classList.add('selected-glow');
+    if (pellicleEl) pellicleEl.innerText = `${monster.pellicle} / ${monster.max}`;
+    if (statusEl) {
+        statusEl.innerText = monster.isDead ? "OUT" : (monster.isLocked ? "LOCKED" : "ACTIVE");
+        statusEl.style.color = monster.isDead ? "var(--gray)" : (monster.isLocked ? "var(--neon-blue)" : "var(--neon-green)");
     }
 
-    if (isPlayer) {
-        div.draggable = true;
-        if (handlers.handleDragStart) div.addEventListener('dragstart', (e) => handlers.handleDragStart(e, index));
-        if (handlers.handleDragEnd) div.addEventListener('dragend', handlers.handleDragEnd);
-        if (handlers.handleMonsterClick) div.onclick = () => handlers.handleMonsterClick(index);
-
-        // Touch Support
-        if (handlers.handleTouchStart) div.addEventListener('touchstart', (e) => handlers.handleTouchStart(e, index), { passive: false });
-    }
-
-    // Info Hover
-    if (handlers.handleMonsterHover) {
-        div.onmouseover = () => handlers.handleMonsterHover(monster, div);
-        div.onmouseout = handlers.handleMonsterUnhover;
-    }
-
-    return div;
-}
-
-export function updateInfoPanel(monster) {
-    if (!selectors.infoPanel || !monster) return;
-    const template = MONSTER_DATABASE[monster.id.replace('e_', '')];
-    selectors.infoPanel.innerHTML = `
-        <div class="info-header">
-            <span class="info-name">${monster.name} [Slot ${gameState.playerTeam.indexOf(monster) !== -1 ? gameState.playerTeam.indexOf(monster) : gameState.enemyTeam.indexOf(monster)}]</span>
-            <span class="info-faction">${monster.faction}</span>
-        </div>
-        <div class="info-stats">
-            <span>Armor: ${monster.pellicle}/${monster.max}</span>
-            <span>Status: ${monster.isDead ? 'OUT' : 'ACTIVE'}</span>
-        </div>
-        <div class="info-abilities">
-            <p><strong>ATK:</strong> ${template.ability.attack}</p>
-            <p><strong>PAS:</strong> ${template.ability.passive}</p>
-        </div>
-    `;
+    if (attackTitleEl) attackTitleEl.innerText = "OFFENSIVE TRAIL";
+    if (attackEl) attackEl.innerText = monster.offensiveTrail;
+    if (passiveTitleEl) passiveTitleEl.innerText = "PELLICLE TRAIL";
+    if (passiveEl) passiveEl.innerText = monster.pellicleTrail;
 }
 
 export function clearActionIndicators() {
@@ -195,10 +260,20 @@ export function triggerVisualEffect(index, isPlayer, type) {
     if (!monsterDiv) return;
 
     if (type === 'hit-flash') {
+        monsterDiv.classList.remove('hit-flash');
+        void monsterDiv.offsetWidth; // Force reflow
         monsterDiv.classList.add('hit-flash');
-        setTimeout(() => monsterDiv.classList.remove('hit-flash'), 200);
-    } else if (type === 'power-up') {
-        monsterDiv.classList.add('power-up-glow');
-        setTimeout(() => monsterDiv.classList.remove('power-up-glow'), 500);
+        setTimeout(() => monsterDiv.classList.remove('hit-flash'), 400);
+    } else if (type === 'hit-light') {
+        monsterDiv.classList.remove('hit-light');
+        void monsterDiv.offsetWidth;
+        monsterDiv.classList.add('hit-light');
+        setTimeout(() => monsterDiv.classList.remove('hit-light'), 200);
+    } else if (type === 'power-up' || type === 'ability-activation') {
+        const effectClass = type === 'ability-activation' ? 'ability-activation' : 'power-up';
+        monsterDiv.classList.remove(effectClass);
+        void monsterDiv.offsetWidth;
+        monsterDiv.classList.add(effectClass);
+        setTimeout(() => monsterDiv.classList.remove(effectClass), 500);
     }
 }

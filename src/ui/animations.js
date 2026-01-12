@@ -148,32 +148,96 @@ export function animatePellicleToMonster(tokenEl, monsterIndex, onComplete, isPl
     const tokenRect = tokenEl.getBoundingClientRect();
     const slotRect = slot.getBoundingClientRect();
 
+    // GLOBAL STRATEGY: move token to body (fixed overlay) to avoid scale miscalculations
+    // We will animate using pure viewport coordinates.
+    document.body.appendChild(tokenEl);
+
     tokenEl.classList.add('flying');
     tokenEl.style.transition = 'none';
-
-    tokenEl.style.left = tokenRect.left + 'px';
-    tokenEl.style.top = tokenRect.top + 'px';
     tokenEl.style.position = 'fixed';
     tokenEl.style.margin = '0';
     tokenEl.style.pointerEvents = 'none';
+    tokenEl.style.zIndex = '9999'; // Ensure above everything
 
+    // Set initial position (Screen Space)
+    tokenEl.style.left = tokenRect.left + 'px';
+    tokenEl.style.top = tokenRect.top + 'px';
+
+    // Force Reflow
     void tokenEl.offsetWidth;
 
-    const duration = 500;
-    tokenEl.style.transition = `all ${duration}ms cubic-bezier(0.175, 0.885, 0.32, 1.275)`;
+    // LANDING MATH: Pure Screen Coordinates
+    // Center of slot - Half of token
+    const targetX = (slotRect.left + slotRect.width / 2) - (tokenRect.width / 2);
+    const targetY = (slotRect.top + slotRect.height / 2) - (tokenRect.height / 2);
 
-    const targetX = slotRect.left + (slotRect.width / 2) - (tokenRect.width / 2);
-    const targetY = slotRect.top + (slotRect.height / 2) - (tokenRect.height / 2);
+    // DYNAMIC DURATION: Maintain constant speed regardless of distance
+    // Velocity: ~1.2 pixels/ms seems like a good balance (1000px in ~800ms)
+    // Distance = sqrt(dx^2 + dy^2)
+    const dx = targetX - tokenRect.left;
+    const dy = targetY - tokenRect.top;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // speed = 0.8 px/ms (slower than before for AI, faster for short drops)
+    // 500px distance -> 625ms
+    // 50px distance -> 62ms (clamped to 300ms)
+    const speed = 0.8;
+    const calculatedDuration = distance / speed;
+    const duration = Math.min(Math.max(calculatedDuration, 300), 1000); // Clamp between 300ms and 1s
+
+    tokenEl.style.transition = `all ${duration}ms cubic-bezier(0.175, 0.885, 0.32, 1.275)`;
 
     tokenEl.style.left = targetX + 'px';
     tokenEl.style.top = targetY + 'px';
-    tokenEl.style.transform = 'scale(1.5) rotate(180deg)';
+    tokenEl.style.transform = 'scale(0.5) rotate(180deg)'; // Scale effect on landing
     tokenEl.style.opacity = '0';
 
     setTimeout(() => {
         tokenEl.remove();
+
+        // Trigger Absorbtion Shake on Monster
+        const monsterImg = slot.querySelector('.monster img');
+        if (monsterImg) {
+            monsterImg.classList.remove('pp-absorb');
+            void monsterImg.offsetWidth; // Force Reflow
+            monsterImg.classList.add('pp-absorb');
+
+            // Remove class after animation
+            setTimeout(() => {
+                if (monsterImg) monsterImg.classList.remove('pp-absorb');
+            }, 400);
+        }
+
         if (onComplete) onComplete();
     }, duration);
+}
+
+/**
+ * Spawns a temporary pellicle token at the top of the screen and flies it into an enemy monster's slot.
+ * @param {number} monsterIndex - Index of the enemy monster to reinforce.
+ * @param {Function} onComplete - Callback after animation finishes.
+ */
+export function triggerAIRenforceAnimation(monsterIndex, onComplete) {
+    // Create a temporary token
+    // Create a temporary token directly in the pellicle layer
+    const pellicleLayer = document.getElementById('pellicle-layer');
+    if (!pellicleLayer) { if (onComplete) onComplete(); return; }
+
+    const token = document.createElement('div');
+    token.className = 'pellicle-token';
+    token.style.position = 'absolute';
+    // Center horizontally relative to the 1000px wide battlefield (assumed width from CSS)
+    // Or just use 50% left minus half width
+    token.style.left = 'calc(50% - 35px)';
+    token.style.top = '-100px';
+    token.style.zIndex = '10000';
+    // Remove any transform that might mess up getBoundingClientRect logic later
+    token.style.transform = 'none';
+
+    pellicleLayer.appendChild(token);
+
+    // Use existing animation logic (isPlayerAndTarget = false for enemy)
+    animatePellicleToMonster(token, monsterIndex, onComplete, false);
 }
 
 export function triggerReflectVisual(sourceSlot, targetSlot, onHit) {
@@ -275,4 +339,26 @@ export function triggerExplosionVisual(team, index, isPlayer, onComplete) {
         }
         if (onComplete) onComplete();
     }, 800);
+}
+
+export function triggerDeathVisual(team, index, isPlayer, onComplete) {
+    const slot = getSlotElement(index, isPlayer);
+    if (!slot) {
+        if (onComplete) onComplete();
+        return;
+    }
+
+    const monsterDiv = slot.querySelector('.monster');
+    if (!monsterDiv) {
+        if (onComplete) onComplete();
+        return;
+    }
+
+    // Apply death animation class
+    monsterDiv.classList.add('death-anim');
+
+    // Wait for animation to finish before calling callback (which will re-render)
+    setTimeout(() => {
+        if (onComplete) onComplete();
+    }, 500);
 }

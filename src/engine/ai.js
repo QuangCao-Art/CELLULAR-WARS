@@ -1,4 +1,4 @@
-import { gameState, CONSTANTS } from './state.js';
+import { gameState, CONSTANTS, getReinforceAmount } from './state.js';
 import * as Renderer from '../ui/renderer.js';
 import * as Animations from '../ui/animations.js';
 import * as Combat from './combat.js';
@@ -6,138 +6,269 @@ import * as Combat from './combat.js';
 export function runAIReinforce(endReinforceCallback) {
     if (!gameState.isAITurn) return;
 
-    let availablePP = CONSTANTS.REINFORCE_AMOUNT;
-    Renderer.updateBattleLog("AI Phase: Reinforcing...");
+    try {
+        let availablePP = getReinforceAmount(true);
+        let pCount = 0;
 
-    // Delay for dramatic effect
-    setTimeout(() => {
-        for (let i = 0; i < availablePP; i++) {
+        function processNextPellicle() {
+            if (pCount >= availablePP) {
+                Renderer.updatePhaseUI();
+                if (endReinforceCallback) setTimeout(endReinforceCallback, 1000);
+                return;
+            }
+
             const livingEnemies = gameState.enemyTeam.filter((m, idx) => !m.isDead && idx < 3);
-            if (livingEnemies.length === 0) break;
+            if (livingEnemies.length === 0) {
+                if (endReinforceCallback) setTimeout(endReinforceCallback, 1000);
+                return;
+            }
 
-            // AI PRIORITY: Vanguard (0) < 3, else Random
             let targetIdx = 0;
-            if (gameState.enemyTeam[0].pellicle >= 3 || gameState.enemyTeam[0].isDead) {
-                const candidates = livingEnemies.map(m => gameState.enemyTeam.indexOf(m));
-                targetIdx = candidates[Math.floor(Math.random() * candidates.length)];
+            const vanguard = gameState.enemyTeam[0];
+
+            if (!vanguard.isDead && vanguard.pellicle < 2) {
+                targetIdx = 0;
+            } else {
+                const candidatesIdx = livingEnemies.map(m => gameState.enemyTeam.indexOf(m));
+                const highImpactIdx = candidatesIdx.find(idx => {
+                    const m = gameState.enemyTeam[idx];
+                    return (m.id.includes('cell011') || m.id.includes('cell02')) && m.pellicle < 4;
+                });
+
+                if (highImpactIdx !== undefined) targetIdx = highImpactIdx;
+                else targetIdx = candidatesIdx[Math.floor(Math.random() * candidatesIdx.length)];
             }
 
             const monster = gameState.enemyTeam[targetIdx];
-            if (monster.pellicle + 1 >= 6) {
-                Combat.triggerExplosion(gameState.enemyTeam, targetIdx);
-            } else {
-                monster.pellicle += 1;
-                Renderer.triggerVisualEffect(targetIdx, false, 'power-up');
-            }
+            const overloadLimit = monster.id.includes('cell011') ? 7 : 6;
+
+            Animations.triggerAIRenforceAnimation(targetIdx, () => {
+                if (monster.pellicle + 1 >= overloadLimit) {
+                    Combat.triggerExplosion(gameState.enemyTeam, targetIdx);
+                } else {
+                    monster.pellicle += 1;
+                    Renderer.triggerVisualEffect(targetIdx, false, 'power-up');
+                }
+                Renderer.renderEnemyFormation();
+                Renderer.updatePhaseUI();
+
+                pCount++;
+                setTimeout(processNextPellicle, 400);
+            });
         }
-        Renderer.renderEnemyFormation();
-        Renderer.updatePhaseUI();
-        if (endReinforceCallback) setTimeout(endReinforceCallback, 1000);
-    }, 1000);
+
+        setTimeout(processNextPellicle, 800);
+    } catch (e) {
+        console.error("AI Reinforce Error:", e);
+        if (endReinforceCallback) endReinforceCallback();
+    }
 }
 
-export function runAIAction(endTurnCallback) {
-    Combat.resetReflectFlags();
+export function runAIActionPhase(callback) {
+    if (!gameState.isAITurn) return;
 
-    // Pick an attacker (Only Active squad can attack)
-    const livingAI = gameState.enemyTeam.filter((m, idx) => !m.isDead && m.pellicle > 0 && idx < 3);
-    if (livingAI.length === 0) {
-        setTimeout(endTurnCallback, 1000);
-        return;
-    }
+    try {
+        const livingAllies = gameState.enemyTeam.filter((m, idx) => !m.isDead && idx < 3);
 
-    const attacker = livingAI.sort((a, b) => b.pellicle - a.pellicle)[0];
-    const attackerIdx = gameState.enemyTeam.indexOf(attacker);
-
-    // Pick a victim (AI only targets Active squad 0-2)
-    const livingPlayer = gameState.playerTeam.filter((m, idx) => !m.isDead && idx < 3);
-    if (livingPlayer.length === 0) {
-        setTimeout(endTurnCallback, 1000);
-        return;
-    }
-
-    let victimIdx = 0;
-    let useAbility = false;
-
-    // AI Logic for specific monsters (Cano, Lydro, Nitro)
-    if (attacker.id.includes('cano') && attacker.pellicle >= 3) {
-        // Canobolus Volley
-        if (!gameState.playerTeam[0].isDead) victimIdx = 0;
-        else {
-            const wings = livingPlayer.map(m => gameState.playerTeam.indexOf(m));
-            victimIdx = wings[Math.floor(Math.random() * wings.length)];
+        // 1. Cambihil Energy Burst check
+        const cambihil = livingAllies.find(m => m.id.includes('cell01') && !m.id.includes('cell011') && !m.specialUsed);
+        if (cambihil && cambihil.pellicle <= 1) {
+            cambihil.pellicle = Math.min(cambihil.max, cambihil.pellicle + 2);
+            cambihil.specialUsed = true;
+            Renderer.showGameMessage(`AI: ${cambihil.name} used Energy Burst!`, "green");
+            Renderer.triggerVisualEffect(gameState.enemyTeam.indexOf(cambihil), false, 'ability-activation');
         }
 
-        const count = attacker.pellicle;
-        Renderer.updateBattleLog(`AI: ${attacker.name} FIRES BALLISTIC VOLLEY (${count} SHOTS)`);
-
-        for (let i = 0; i < count; i++) {
-            setTimeout(() => {
-                if (attacker.isDead || attacker.pellicle <= 0) return;
-                attacker.pellicle -= 1;
-                Renderer.renderEnemyFormation();
-
-                Animations.triggerProjectile(attackerIdx, victimIdx, false, () => {
-                    Combat.resolveHit(gameState.playerTeam[victimIdx], victimIdx, gameState.playerTeam, attacker, attackerIdx, gameState.enemyTeam);
-                    Renderer.renderFormation();
-                    Renderer.renderEnemyFormation();
-                }, 100);
-            }, i * 80);
+        // 2. Lydrosome Osmotic Flow check
+        const lydro = livingAllies.find(m => m.id.includes('cell02') && !m.specialUsed);
+        const vanguard = gameState.enemyTeam[0];
+        if (lydro && !vanguard.isDead && vanguard.pellicle < 2 && lydro.pellicle > 1) {
+            lydro.pellicle--;
+            vanguard.pellicle++;
+            lydro.specialUsed = true;
+            Renderer.showGameMessage(`AI: ${lydro.name} transferred energy!`, "blue");
+            Renderer.triggerVisualEffect(gameState.enemyTeam.indexOf(lydro), false, 'ability-activation');
+            Renderer.triggerVisualEffect(0, false, 'ability-activation');
         }
-        setTimeout(endTurnCallback, count * 80 + 1000);
-        return;
+
+        Renderer.renderEnemyFormation();
+        setTimeout(callback, 1000);
+    } catch (e) {
+        console.error("AI Action Phase Error:", e);
+        callback();
     }
+}
 
-    // Lydrosome Shot
-    if (attacker.id.includes('lydro') && attacker.pellicle >= 2) {
-        if (gameState.playerTeam[0].pellicle >= 3 && livingPlayer.length > 1) {
-            const wings = livingPlayer.filter(m => gameState.playerTeam.indexOf(m) !== 0);
-            victimIdx = gameState.playerTeam.indexOf(wings[Math.floor(Math.random() * wings.length)]);
-            useAbility = true;
-        } else if (gameState.playerTeam[0].isDead) {
-            const wings = livingPlayer.map(m => gameState.playerTeam.indexOf(m));
-            victimIdx = wings[Math.floor(Math.random() * wings.length)];
-            useAbility = true;
-        }
+export function runAIAttackPhase(endTurnCallback) {
+    try {
+        Combat.resetReflectFlags();
 
-        if (useAbility || attacker.pellicle >= 2) {
-            attacker.pellicle -= 2;
-            Renderer.renderEnemyFormation();
-            Animations.triggerProjectile(attackerIdx, victimIdx, false, () => {
-                Renderer.updateBattleLog(`AI: ${attacker.name} USES HYDRO SHOT!`);
-                Combat.resolveHit(gameState.playerTeam[victimIdx], victimIdx, gameState.playerTeam, attacker, attackerIdx, gameState.enemyTeam);
-                Renderer.renderFormation();
-                Renderer.renderEnemyFormation();
-                setTimeout(endTurnCallback, 1000);
-            }, 200, 'hydro');
+        if (gameState.turnNumber === 1) {
+            setTimeout(endTurnCallback, 1000);
             return;
         }
-    }
 
-    // Fallback: Standard Attack
-    const cost = (attacker.id.includes('nitro') || attacker.id.includes('lydro')) ? 2 : 1;
-    if (attacker.pellicle >= cost) {
+        const candidates = gameState.enemyTeam
+            .map((m, idx) => ({ monster: m, index: idx }))
+            .filter(item => !item.monster.isDead && item.monster.pellicle > 0 && !item.monster.isLocked && item.index < 3)
+            .sort((a, b) => b.monster.pellicle - a.monster.pellicle);
+
+        if (candidates.length === 0) {
+            setTimeout(endTurnCallback, 1000);
+            return;
+        }
+
+        let selectedAttacker = null;
+        let actionCost = 0;
+
+        for (const cand of candidates) {
+            const m = cand.monster;
+            let cost = 1;
+            if (m.id.includes('cell02')) cost = 2;
+
+            if (m.pellicle >= cost) {
+                selectedAttacker = cand;
+                actionCost = cost;
+                break;
+            }
+        }
+
+        if (!selectedAttacker) {
+            setTimeout(endTurnCallback, 1000);
+            return;
+        }
+
+        const attacker = selectedAttacker.monster;
+        const attackerIdx = selectedAttacker.index;
+
+        const livingPlayer = gameState.playerTeam.filter((m, idx) => !m.isDead && idx < 3);
+        if (livingPlayer.length === 0) {
+            setTimeout(endTurnCallback, 1000);
+            return;
+        }
+
+        let victimIdx = 0;
+        let useAbility = false;
+
+        // 1. Canobolus Volley 
+        if (attacker.id.includes('cell011') && attacker.pellicle >= 3) {
+            if (!gameState.playerTeam[0].isDead) victimIdx = 0;
+            else {
+                const wings = livingPlayer.map(m => gameState.playerTeam.indexOf(m));
+                victimIdx = wings[Math.floor(Math.random() * wings.length)];
+            }
+
+            const count = attacker.pellicle;
+            Renderer.showGameMessage(`AI: BALLISTIC VOLLEY!`, "red");
+
+            for (let i = 0; i < count; i++) {
+                setTimeout(() => {
+                    if (attacker.isDead || attacker.pellicle <= 0) return;
+                    attacker.pellicle -= 1;
+                    Renderer.renderEnemyFormation();
+
+                    Animations.triggerProjectile(attackerIdx, victimIdx, false, () => {
+                        Combat.resolveHit(gameState.playerTeam[victimIdx], victimIdx, gameState.playerTeam, attacker, attackerIdx, gameState.enemyTeam);
+                        setTimeout(() => {
+                            Renderer.renderFormation();
+                            Renderer.renderEnemyFormation();
+                        }, 600);
+                    }, 100);
+                }, i * 80);
+            }
+            setTimeout(endTurnCallback, count * 80 + 1000);
+            return;
+        }
+
+        // 2. Lydrosome Shot
+        if (attacker.id.includes('cell02') && attacker.pellicle >= 2) {
+            if (gameState.playerTeam[0].pellicle >= 3 && livingPlayer.length > 1) {
+                const wings = livingPlayer.filter(m => gameState.playerTeam.indexOf(m) !== 0);
+                victimIdx = gameState.playerTeam.indexOf(wings[Math.floor(Math.random() * wings.length)]);
+                useAbility = true;
+            } else if (gameState.playerTeam[0].isDead) {
+                const wings = livingPlayer.map(m => gameState.playerTeam.indexOf(m));
+                victimIdx = wings[Math.floor(Math.random() * wings.length)];
+                useAbility = true;
+            }
+
+            if (useAbility || attacker.pellicle >= 2) {
+                attacker.pellicle -= 2;
+                Renderer.renderEnemyFormation();
+                Animations.triggerProjectile(attackerIdx, victimIdx, false, () => {
+                    Renderer.showGameMessage(`AI: HYDRO SHOT!`, "blue");
+                    Combat.resolveHit(gameState.playerTeam[victimIdx], victimIdx, gameState.playerTeam, attacker, attackerIdx, gameState.enemyTeam);
+
+                    setTimeout(() => {
+                        Renderer.renderFormation();
+                        Renderer.renderEnemyFormation();
+                    }, 600);
+                    setTimeout(endTurnCallback, 1200);
+                }, 375, 'hydro');
+                return;
+            }
+        }
+
+        // 3. Standard Attack
         if (gameState.playerTeam[0].isDead) {
             const wings = livingPlayer.map(m => gameState.playerTeam.indexOf(m));
             victimIdx = wings[Math.floor(Math.random() * wings.length)];
         }
 
-        attacker.pellicle -= cost;
+        attacker.pellicle -= actionCost;
         Renderer.renderEnemyFormation();
 
-        Animations.triggerProjectile(attackerIdx, victimIdx, false, () => {
-            Renderer.updateBattleLog(`AI: ${attacker.name} attacks ${gameState.playerTeam[victimIdx].name}!`);
-            Combat.resolveHit(gameState.playerTeam[victimIdx], victimIdx, gameState.playerTeam, attacker, attackerIdx, gameState.enemyTeam);
-            Renderer.renderFormation();
-            Renderer.renderEnemyFormation();
-            setTimeout(endTurnCallback, 1000);
-        }, 200);
-    } else {
-        setTimeout(endTurnCallback, 1000);
-    }
-}
+        const visualType = attacker.id.includes('cell03') ? 'nitro' : (attacker.id.includes('cell02') ? 'hydro' : 'standard');
 
-export function resetReflectFlags() {
-    gameState.playerTeam.forEach(m => m.hasReflectedThisAction = false);
-    gameState.enemyTeam.forEach(m => m.hasReflectedThisAction = false);
+        // PHAGOBURST AI: Triple Pop
+        if (attacker.id.includes('cell04') && attacker.pellicle + actionCost >= 2) {
+            attacker.pellicle = (attacker.pellicle + actionCost) - 2;
+            Renderer.renderEnemyFormation();
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    if (attacker.isDead || gameState.playerTeam[victimIdx].isDead) return;
+                    Animations.triggerProjectile(attackerIdx, victimIdx, false, () => {
+                        Combat.resolveHit(gameState.playerTeam[victimIdx], victimIdx, gameState.playerTeam, attacker, attackerIdx, gameState.enemyTeam, 'light');
+                        setTimeout(() => { Renderer.renderFormation(); Renderer.renderEnemyFormation(); }, 600);
+                    }, 100);
+                }, i * 200);
+            }
+            setTimeout(endTurnCallback, 1500);
+            return;
+        }
+
+        Animations.triggerProjectile(attackerIdx, victimIdx, false, () => {
+            Combat.resolveHit(gameState.playerTeam[victimIdx], victimIdx, gameState.playerTeam, attacker, attackerIdx, gameState.enemyTeam, 'heavy', null, () => {
+                // MITONEGY AI: Auto-Repair
+                if (attacker.id.includes('cell07')) {
+                    const allies = gameState.enemyTeam.filter((m, i) => !m.isDead && i < 3);
+                    if (allies.length > 0) {
+                        let lowestP = Math.min(...allies.map(m => m.pellicle));
+                        let candidates = allies.filter(m => m.pellicle === lowestP);
+                        let target = candidates[Math.floor(Math.random() * candidates.length)];
+                        target.pellicle = Math.min(target.max, target.pellicle + 1);
+                        Renderer.showGameMessage(`AI Auto-Repair: ${target.name}!`, "green");
+                        Renderer.triggerVisualEffect(gameState.enemyTeam.indexOf(target), false, 'power-up');
+                    }
+                }
+
+                // CHLAROB AI: Quick Rob
+                if (attacker.id.includes('cell08')) {
+                    attacker.pellicle = Math.min(attacker.max, attacker.pellicle + 1);
+                    Renderer.showGameMessage(`AI: Quick Rob!`, "green");
+                    Renderer.triggerVisualEffect(attackerIdx, false, 'power-up');
+                }
+            });
+
+            setTimeout(() => {
+                Renderer.renderFormation();
+                Renderer.renderEnemyFormation();
+            }, 600);
+            setTimeout(endTurnCallback, 1200);
+        }, 375, visualType);
+
+    } catch (e) {
+        console.error("AI Action Error:", e);
+        if (endTurnCallback) endTurnCallback();
+    }
 }

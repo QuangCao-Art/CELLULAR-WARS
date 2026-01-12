@@ -7,17 +7,22 @@ This document serves as the central repository for recording data and informatio
 - **Đội hình**: Xếp hình tam giác (**1 Vanguard** - 2 Wings). Vanguard phải bị tiêu diệt trước (trừ đòn xuyên thấu).
 - **Lượt chơi**:
     1. **Reinforce (Nạp)**: Nhận 2 Pellicle, chia cho quái vật (Tối đa 5 điểm/con).
-    2. **Ability (Kỹ năng)**: Chuyển Pellicle hoặc dùng nội tại.
-    3. **Action (Tấn công)**: Chọn 1 quái vật để bắn (Tốn Pellicle).
+    2. **Action (Trail)**: Kích hoạt chuyên biệt **Offensive Trail** hoặc **Pellicle Trail**.
+    3. **Combat (Tấn công)**: Chọn 1 quái vật để tấn công (Tốn Pellicle).
 - **Cơ chế Overload**: Nếu con nào nhận hạt Pellicle thứ 6 -> **TỰ NỔ**, gây sát thương lan cho đồng đội bên cạnh.
 
-## 🦖 MONSTER SUMMARY (TÓM TẮT QUÁI VẬT)
-- **Nitrophil**: Phản sát thương khi bị đánh. Kỹ năng chủ động gây nổ lan.
-- **Lydrosome**: Chuyền Pellicle cho đồng đội. Kỹ năng chủ động bắn xuyên Vanguard.
-- **Canobolus**: Nhận thêm +1 Pellicle khi được nạp. Kỹ năng chủ động bắn nhiều phát liên tiếp.
-- **Kerashell**: Cỗ xe tăng với lớp vỏ Keratin. Bắt đầu với 2 màng (Vanguard).
-- **Mitonegy**: Nhà máy năng lượng. Hồi màng cho đồng đội và tặng Pellicle khi vào trận.
-- **Chlarob**: Ký sinh đột biến. Cướp Pellicle của đối thủ và để lại quà khi bị hạ.
+## 🦖 CELLDEX SUMMARY (TÓM TẮT CÁC CHỦNG LOÀI)
+- **Cell01 - Canobolus**: Nhận thêm +1 Pellicle khi được nạp. Offensive Trail bắn liên hồi.
+- **Cell02 - Lydrosome**: Điều phối Pellicle cho đồng đội. Offensive Trail bắn xuyên Vanguard.
+- **Cell03 - Nitrophil**: Phản sát thương khi bị đánh. Offensive Trail gây nổ lan.
+- **Cell04 - Phagoburst**: Khởi đầu chậm nhưng sức mạnh bộc phát. Offensive Trail bắn ra 3 shot liên tiếp.
+- **Cell05 - Fibron**: Linh hoạt và cơ động. Nhận thêm Pellicle khi ra sân từ khu dự bị.
+- **Cell06 - Kerashell**: Bắt đầu trận với 2 Pellicle (Vanguard). Offensive Trail thực dụng, giá rẻ.
+- **Cell07 - Mitonegy**: Tặng Pellicle cho đồng đội khi vào trận. Offensive Trail hỗ trợ hồi phục.
+- **Cell08 - Chlarob**: Cướp Pellicle của đối thủ. Pellicle Trail tặng quà khi bị hạ.
+- **Cell09 - Dip-Alpha**: Một nửa của bộ đôi song sinh. Gây sát thương lên Vanguard địch khi bị hạ.
+- **Cell10 - Dip-Beta**: Một nửa của bộ đôi song sinh. Gây sát thương lên Wing mạnh nhất của địch khi bị hạ.
+- **Double Team Bonus**: Nếu cả Dip-Alpha và Dip-Beta cùng trong Active Zone, cả hai đều có thể tấn công trong cùng một lượt.
 
 ## 🧬 CELLULAR WARS: RULEBOOK
 
@@ -37,25 +42,26 @@ This document serves as the central repository for recording data and informatio
 ### Thuật Ngữ (Glossary)
 *   **Pellicle (P)**: Đơn vị năng lượng kiêm lá chắn của Monster.
 *   **Hit Effect**: Hiệu ứng khi Monster bị trừ 1 Pellicle (bao gồm bị đánh, phản đòn, nổ lan). Thể hiện bằng việc Monster nháy đỏ (`hit-flash`) và màn hình rung (`shake`).
-*   **Pellicle Ability Effect**: Hiệu ứng khi kích hoạt kỹ năng Pellicle (VD: Lydrosome chuyền P). Monster sẽ tỏa sáng xanh lá nhẹ và có hiệu ứng Power Up.
-*   **Pellicle Ability UX**: Để kích hoạt kỹ năng chủ động (như Osmotic Flow), người chơi **Bấm chọn Monster** (Monster sẽ chớp tắt/Glow) -> Sau đó **Bấm vào Mục tiêu** để thực thi.
+*   **Pellicle Trail Effect**: Hiệu ứng khi kích hoạt kỹ năng Pellicle (VD: Lydrosome chuyền P). Monster sẽ tỏa sáng xanh lá nhẹ và có hiệu ứng Power Up.
+*   **Pellicle Trail UX**: Để kích hoạt kỹ năng chủ động (như Osmotic Flow), người chơi **Bấm chọn Monster** (Monster sẽ chớp tắt/Glow) -> Sau đó **Bấm vào Mục tiêu** để thực thi.
 *   **Vanguard**: Vị trí tiền đạo (đứng đầu).
 *   **Wings**: Vị trí cánh (đứng sau).
 *   **Reinforce Phase**: Giai đoạn nạp năng lượng.
-*   **Action Phase**: Giai đoạn hành động/tấn công.
+*   **Action Phase (Trail Phase)**: Giai đoạn kích hoạt Trail (Offensive/Pellicle).
+*   **Combat Phase**: Giai đoạn hành động/tấn công.
 
 ### 3. CẤU TRÚC LƯỢT CHƠI (PHASES)
 1.  **Giai đoạn Nạp (Reinforce)**: Nhận 2 Pellicle và phân bổ vào các Oddie.
-2.  **Giai đoạn Pellicle (Ability)**: Kích hoạt các kỹ năng hỗ trợ hoặc nội tại (như chuyển màng của Lydrosome).
-3.  **Giai đoạn Khai hỏa (Attack Phase)**: Chọn **duy nhất 1** Oddie để tấn công.
+2.  **Giai đoạn Hành động (Action)**: Kích hoạt các chuyên biệt **Offensive Trail** hoặc **Pellicle Trail**.
+3.  **Giai đoạn Giao tranh (Combat Phase)**: Chọn **duy nhất 1** Oddie để tấn công.
 
 ### 4. CƠ CHẾ CHIẾN ĐẤU & DI CHUYỂN
 *   **Xoay Đội Hình (Tactical Swap)**: **Miễn phí (Free)**. Tuy nhiên, các Monster tham gia xoay vị trí sẽ **không được Tấn công** trong lượt đó. (Vanguard về Cánh, Cánh lên Vanguard).
 *   **Pellicle Burn**: Mọi đòn tấn công đều tốn Pellicle. Không có đòn đánh miễn phí.
 
 ### 5. QUY TẮC THÍCH NGHI LƯỢT ĐẦU (Acclimatization)
-*   **Lượt 1 (Người đi trước)**: Chỉ được Nạp (Reinforce). Khóa cả Pellicle Ability và Attack Ability.
-*   **Lượt 1 (Người đi sau)**: Được phép dùng Pellicle Ability (tự vệ) nhưng vẫn khóa Attack Ability.
+*   **Lượt 1 (Người đi trước)**: Chỉ được Nạp (Reinforce). Khóa cả Pellicle Trail và Offensive Trail.
+*   **Lượt 1 (Người đi sau)**: Được phép dùng Pellicle Trail (tự vệ) nhưng vẫn khóa Offensive Trail.
 *   **Từ lượt 2 trở đi**: Mở khóa hoàn toàn.
 
 ### 6. QUY TẮC KHU VỰC DỰ BỊ (RESERVE AREA)
@@ -74,41 +80,34 @@ This document serves as the central repository for recording data and informatio
 
 ---
 
-## 🦠 MONSTER DATA
-
-### Bảng Kỹ Năng (Abilities)
-
-**Team A: The Cell Trio**
-
-| Monster | Vai trò | Attack Ability (Chủ động - Tốn P) | Pellicle Ability (Nội tại/Hỗ trợ) |
+## 🦠 CELLDEX DATA
+ 
+ ### Bảng Chỉ Số Chủng Loài (Cellular Trails)
+ 
+| ID | Monster | Offensive Trail (Chủ động - Tốn P) | Pellicle Trail (Nội tại/Hỗ trợ) |
 | :--- | :--- | :--- | :--- |
-| **Nitrophil** | **Pháo hôi** | **Nitro Blast (2P)**: Phá 1 màng mục tiêu + 1 sát thương lan (phá 1 màng con đứng cạnh mục tiêu đó). | **Reactive Membrane**: Mỗi khi bị phá 1 màng, Nitrophil ngay lập tức phản lại 1 sát thương lên kẻ vừa tấn công. |
-| **Lydrosome** | **Điều phối** | **Hydro Shot (2P)**: Phá 1 màng mục tiêu. Có thể bắn xuyên qua Vanguard để trúng hàng sau (Wings) trực tiếp. | **Osmotic Flow (Phase 2)**: Cho phép di chuyển bất kỳ số lượng màng nào từ Lydrosome sang cho đồng đội còn sống. |
-| **Canobolus** | **Trọng pháo** | **Ballistic Volley (XP)**: Đốt sạch X màng đang có để bắn ra X phát đạn. Mỗi phát phá 1 màng (Có thể dồn vào 1 mục tiêu). | **Root Synergy**: Khi được nạp Pellicle, Canobolus tự động nhận thêm **+1 Pellicle**. |
-
-### Thông Tin Chi Tiết (Lore & Mechanics)
-
-| Tên | Hình ảnh | Hệ (Element) | Phân loại | Cơ chế chính | Ý tưởng nguyên bản |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Nitrophil** | ![Nitrophil](Images/Nitrophil.png) | Hỏa/Hóa chất | Guardian / Bouncer | **Reactive Membrane**: Phản sát thương khi bị tấn công và gây sát thương lan. | Dựa trên tế bào bạch cầu trung tính (Neutrophil) – tự nổ để diệt khuẩn. |
-| **Lydrosome** | ![Lydrosome](Images/Lydrosome.png) | Thủy/Enzyme | Tactician / Medic | **Osmotic Control**: Chuyển màng cho đồng đội và khóa khả năng nạp của địch. | Dựa trên tiêu thể (Lysosome) – túi chứa enzyme tiêu hóa và điều tiết nước. |
-| **Canobolus** | ![Canobolus](Images/Canobolus.png) | Mộc/Quang năng | Glass Cannon / Carry | **Root Synergy**: Khi được nạp Pellicle, Canobolus tự động nhận thêm +1 Pellicle. | (Thực vật/Quang hợp - Giả tưởng) |
-
-### Tổng quan chiến thuật
-*   **Nitrophil**: Đừng chạm vào nó nếu không muốn "gậy ông đập lưng ông".
-*   **Lydrosome**: Trái tim của đội hình, vừa là túi máu, vừa là kẻ khóa chân chủ lực đối phương.
-*   **Canobolus**: Cỗ máy hủy diệt. Chỉ cần nạp 2 lượt là đủ màng để bắn tan nát đội hình địch.
-
-
----
-
-## 🔒 BACKLOG (DỮ LIỆU ĐỂ DÀNH)
-
-**Team B: THE SCAVENGER STRAIN (Momentum & Resource Control)**
-
-| Monster | Origin (Nguồn gốc & Ý nghĩa) | Attack Ability (Chủ động) | Pellicle Ability (Nội tại) |
-| :--- | :--- | :--- | :--- |
-| **Kerashell** | **Keratin + Shell**: Lớp vỏ cấu tạo từ tế bào sừng siêu cứng. Một cỗ xe tăng sinh học thực thụ, cực kỳ bền bỉ. | **Light Strike (1P)**: Phá 1 màng mục tiêu. (Rẻ, thực dụng, tấn công liên tục). | **Vanguard**: Bắt đầu trận đấu với 2 màng sẵn có. |
-| **Mitonegy** | **Mitochondria + Energy**: Nhà máy năng lượng sống. Chuyên điều phối và tái tạo Pellicle cho đồng đội. | **Auto-Repair (2P)**: Phá 1 màng đối thủ. Tự hồi 1 màng cho đồng đội ít P nhất. | **Free Gift**: Vào trận, tặng ngay mỗi đồng đội +1P. |
-| **Chlarob** | **Chlamydia + Rob**: Vi khuẩn ký sinh đột biến. Chuyên thâm nhập và đánh cắp Pellicle từ bên trong đối thủ. | **Quick Rob (2P)**: Phá 1 màng. Cướp luôn 1P của đối thủ về cho mình. | **Loot Drop**: Khi bị OUT, +1P cho đồng đội có số P ít nhất. |
-
+| **Cell01** | **Canobolus** | **Ballistic Volley (XP)**: Đốt sạch X màng đang có để bắn ra X phát đạn. Mỗi phát phá 1 màng. | **Root Synergy**: Ngưỡng Overload là 7. |
+| **Cell02** | **Lydrosome** | **Hydro Shot (2P)**: Phá 1 màng. Có thể bắn xuyên qua Vanguard để trúng hàng sau (Wings). | **Osmotic Flow (Action Phase)**: Cho phép di chuyển Pellicle sang cho đồng đội. |
+| **Cell03** | **Nitrophil** | **Nitro Burn (1P)**: Phá 1 màng mục tiêu (Không gây nổ lan). | **Reactive Membrane**: Phản lại 1 sát thương lên kẻ vừa tấn công. |
+| **Cell04** | **Phagoburst** | **Triple Pop (2P)**: Bắn liên tiếp 3 shot (Phá 3 màng). | **Heavy Primer**: Lượt 1 không nạp P. Các lượt sau max 1P/lượt. |
+| **Cell05** | **Fibron** | **Fiber Sting (1P)**: Phá 1 màng mục tiêu. | **Reinforce Entry**: Ra sân từ dự bị nhận ngay +1P (1 lần/trận). |
+| **Cell06** | **Kerashell** | **Light Strike (1P)**: Phá 1 màng mục tiêu (Thực dụng, rẻ). | **Vanguard**: Bắt đầu ván đấu với 2 Pellicle (khi ở vị trí Vanguard). |
+| **Cell07** | **Mitonegy** | **Auto-Repair (2P)**: Phá 1 màng đối thủ + Hồi 1 màng cho đồng đội ít P nhất. | **Free Gift**: Vào trận, tặng ngay mỗi đồng đội +1P. |
+| **Cell08** | **Chlarob** | **Quick Rob (2P)**: Phá 1 màng + Cướp 1P của đối thủ về cho mình. | **Loot Drop**: Khi bị hạ, +1P cho đồng đội có số P ít nhất. |
+| **Cell09** | **Dip-Alpha** | **Twin Sting (1P)**: Phá 1 màng mục tiêu. | **Legacy Crash**: Khi OUT, -1P của enemy Vanguard. |
+| **Cell10** | **Dip-Beta** | **Twin Sting (1P)**: Phá 1 màng mục tiêu. | **Energy Leak**: Khi OUT, -1P của đứa cao P ở vị trí Wings. |
+ 
+ ### Thông Tin Chi Tiết (Lore & Mechanics)
+ 
+| ID | Monster | Hình ảnh | Phân loại | Mô tả Lore (Lịch sử & Đặc tính) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Cell01** | **Canobolus** | ![Canobolus](Images/Canobolus.png) | Glass Cannon / Carry | **Bào tử bắn - Ballistospore**: Tế bào nấm mang cơ chế áp suất máy bắn đá; nó bám rễ để hấp thụ Pellicle cực nhanh và xả ra những đợt đạn bào tử liên tiếp như pháo cao xạ. |
+| **Cell02** | **Lydrosome** | ![Lydrosome](Images/Lydrosome.png) | Tactician / Medic | **Tiêu thể - Lysosome**: Túi chứa Enzyme phân hủy bị nhiễm men; nó tiết dịch khóa chặt các phản ứng sinh hóa của địch và có thể chuyển hóa lớp màng bảo vệ cho đồng đội. |
+| **Cell03** | **Nitrophil** | ![Nitrophil](Images/Nitrophil.png) | Guardian / Bouncer | **Bạch cầu trung tính**: Tế bào miễn dịch đột biến mang đặc tính nổ; nó tiêu diệt kẻ địch bằng dịch Nitro lan tỏa và phản đòn lập tức khi lớp màng bị xâm phạm. |
+| **Cell04** | **Phagoburst** | - | Burst Damager | **Tế bào thực bào - Phagocyte**: Kẻ dọn dẹp khổng lồ với cấu trúc đa nhân phức tạp; nó hấp thụ năng lượng cực chậm nhưng có thể kích nổ một đợt 3 phát bắn hủy diệt mục tiêu. |
+| **Cell05** | **Fibron** | - | Mobility Support | **Tế bào sợi - Fibroblast**: Tế bào tạo liên kết được gia cố vi mạch; nó di chuyển linh hoạt từ vùng dự bị ra sân để nhận thêm năng lượng và tung đòn đâm xuyên giá rẻ. |
+| **Cell06** | **Kerashell** | - | Tanker | **Tế bào sừng - Keratinocyte**: Lớp vỏ từ Protein sừng của da được nén cứng; nó sở hữu sức bền tự thân cao và khả năng tấn công tiêu hao ít năng lượng nhất đội hình. |
+| **Cell07** | **Mitonegy** | - | Support | **Ti thể - Mitochondria**: Bào quan tạo năng lượng bị lỗi mã nguồn; nó hoạt động như một máy biến áp, phân phát Pellicle đầu trận và tự động vá màng cho đồng đội yếu nhất. |
+| **Cell08** | **Chlarob** | - | Scavenger | **Vi khuẩn Chlamydia**: Vi khuẩn ký sinh nội bào bắt buộc; nó thâm nhập sâu vào tế bào đối phương để cướp năng lượng và giải phóng tài nguyên cứu trợ khi bị tiêu diệt. |
+| **Cell09** | **Dip-Alpha** | - | Dual Combatant | **Song cầu khuẩn - Diplococcus**: Biến thể "anh" của cặp vi khuẩn song sinh; gã phối hợp tấn công kép cùng em mình nhưng cái chết của gã sẽ rút cạn năng lượng của kẻ địch. |
+| **Cell10** | **Dip-Beta** | - | Dual Combatant | **Song cầu khuẩn - Diplococcus**: Biến thể "em" của cặp vi khuẩn song sinh; cô cùng anh trai tạo ra gọng kìm tấn công liên tục, nhưng nếu bị OUT sẽ làm rò rỉ năng lượng của kẻ địch. |
