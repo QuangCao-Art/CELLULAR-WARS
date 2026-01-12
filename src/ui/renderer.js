@@ -123,6 +123,11 @@ function createSlotDOM(monster, index, isPlayer, handlers = {}) {
         slot.innerHTML = `<div class="monster dead">
             <div class="death-marker">X</div>
         </div>`;
+
+        const monsterDiv = slot.querySelector('.monster');
+        monsterDiv.onmouseenter = () => handlers.handleMouseEnter && handlers.handleMouseEnter(monster, isPlayer, index);
+        monsterDiv.onmouseleave = () => handlers.handleMouseLeave && handlers.handleMouseLeave();
+
         return slot;
     }
 
@@ -209,12 +214,35 @@ export function updateInfoPanel(monster, isPlayer) {
     const passiveTitleEl = document.getElementById('panel-passive-title');
     const passiveEl = document.getElementById('panel-passive');
 
+    if (monster === 'token') {
+        if (nameEl) nameEl.innerText = "PELLICLE TOKEN";
+        if (imgEl) {
+            imgEl.src = "Images/P-Token.png"; // Assuming this exists or using a placeholder
+            imgEl.classList.remove('hidden');
+        }
+        if (pellicleEl) pellicleEl.innerText = "1 / 1";
+        if (statusEl) {
+            statusEl.innerText = "STABLE";
+            statusEl.style.color = "var(--neon-blue)";
+        }
+        if (attackTitleEl) attackTitleEl.innerText = "SYSTEM RESOURCE";
+        if (attackEl) attackEl.innerText = "Essential data unit used to reinforce unit integrity and catalyze cellular growth.";
+        if (passiveTitleEl) passiveTitleEl.innerText = "INTEGRATION";
+        if (passiveEl) passiveEl.innerText = "Drag onto a monster to restore 1 Pellicle. Can be used during the Reinforce Phase.";
+        return;
+    }
+
     if (!monster) {
         if (nameEl) nameEl.innerText = "SQUAD INFO";
         if (imgEl) imgEl.classList.add('hidden');
         if (pellicleEl) pellicleEl.innerText = "- / -";
-        if (statusEl) statusEl.innerText = "SELECT UNIT";
+        if (statusEl) {
+            statusEl.innerText = "SELECT UNIT";
+            statusEl.style.color = "var(--gray)";
+        }
+        if (attackTitleEl) attackTitleEl.innerText = "OFFENSIVE TRAIL";
         if (attackEl) attackEl.innerText = "Hover over a monster to view its offensive capabilities.";
+        if (passiveTitleEl) passiveTitleEl.innerText = "PELLICLE TRAIL";
         if (passiveEl) passiveEl.innerText = "Hover over a monster to view its specialized traits.";
         return;
     }
@@ -226,14 +254,19 @@ export function updateInfoPanel(monster, isPlayer) {
     }
     if (pellicleEl) pellicleEl.innerText = `${monster.pellicle} / ${monster.max}`;
     if (statusEl) {
-        statusEl.innerText = monster.isDead ? "OUT" : (monster.isLocked ? "LOCKED" : "ACTIVE");
-        statusEl.style.color = monster.isDead ? "var(--gray)" : (monster.isLocked ? "var(--neon-blue)" : "var(--neon-green)");
+        if (monster.isDead) {
+            statusEl.innerText = "SYSTEM WASTE";
+            statusEl.style.color = "var(--neon-red)";
+        } else {
+            statusEl.innerText = monster.isLocked ? "LOCKED" : "ACTIVE";
+            statusEl.style.color = monster.isLocked ? "var(--neon-blue)" : "var(--neon-green)";
+        }
     }
 
     if (attackTitleEl) attackTitleEl.innerText = "OFFENSIVE TRAIL";
-    if (attackEl) attackEl.innerText = monster.offensiveTrail;
+    if (attackEl) attackEl.innerText = monster.isDead ? "This unit's biological functions have ceased. It no longer contributes to combat systems." : monster.offensiveTrail;
     if (passiveTitleEl) passiveTitleEl.innerText = "PELLICLE TRAIL";
-    if (passiveEl) passiveEl.innerText = monster.pellicleTrail;
+    if (passiveEl) passiveEl.innerText = monster.isDead ? "Resource extraction required. Unit out of commission." : monster.pellicleTrail;
 }
 
 export function clearActionIndicators() {

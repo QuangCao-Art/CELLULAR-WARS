@@ -172,7 +172,8 @@ function spawnPellicleTokens() {
         token.style.animationDelay = `${randomDelay}s, ${parseFloat(randomDelay) + 0.6}s`;
 
         // Info Panel Hover
-        token.addEventListener('mouseover', () => Renderer.updateInfoPanelWithToken());
+        token.addEventListener('mouseover', () => Renderer.updateInfoPanel('token'));
+        token.addEventListener('mouseout', () => Renderer.updateInfoPanel(null));
 
         token.addEventListener('dragstart', (e) => {
             gameState.isDraggingPellicleFlag = true;
