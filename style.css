@@ -5,7 +5,7 @@
     --neon-blue: #00f3ff;
     --neon-green: #0aff00;
     --neon-red: #ff0055;
-    --necrosis: #666;
+    --necrosis: #444;
     --glass-panel: rgba(255, 255, 255, 0.05);
     --bf-scale: 1;
     /* Centralized scale tracking */
@@ -66,6 +66,9 @@ body {
     justify-content: center;
     align-items: center;
     text-align: center;
+    background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('Images/BG_Main.png');
+    background-size: cover;
+    background-position: center;
 }
 
 .game-title {
@@ -73,7 +76,9 @@ body {
     font-size: 3rem;
     color: white;
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-    margin-bottom: 50px;
+    position: absolute;
+    top: 20%;
+    margin: 0;
 }
 
 .neon-text {
@@ -83,8 +88,22 @@ body {
 
 .menu-options {
     display: flex;
-    flex-direction: column;
-    gap: 20px;
+    flex-direction: row;
+    gap: 30px;
+    position: absolute;
+    bottom: 100px;
+    width: 100%;
+    justify-content: center;
+}
+
+.version {
+    position: absolute;
+    bottom: 40px;
+    width: 100%;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8rem;
+    font-family: 'Orbitron', sans-serif;
 }
 
 .btn-neon {
@@ -204,6 +223,9 @@ body {
     /* Force layer & stable 2D context */
     will-change: transform;
     transform-origin: center center;
+    background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url('Images/BG_Battle.png');
+    background-size: cover;
+    background-position: center;
 }
 
 #pellicle-layer {
@@ -2309,7 +2331,9 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background: radial-gradient(circle at center, #1a253a 0%, #050a14 100%);
+    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('Images/BG_CellContainerMenu.png');
+    background-size: cover;
+    background-position: center;
 }
 
 .loadout-container {
