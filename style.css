@@ -217,7 +217,7 @@ body {
     gap: 10px;
     width: 100%;
     min-height: 500px;
-    top: -50px;
+    top: 10px;
     padding-bottom: 80px;
     transform: scale(var(--bf-scale)) translate3d(0, 0, 0);
     /* Force layer & stable 2D context */
