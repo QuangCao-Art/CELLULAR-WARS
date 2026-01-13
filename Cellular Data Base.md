@@ -29,27 +29,28 @@ This document serves as the central repository for recording data and informatio
 
 ### 1. THIẾT LẬP (SETUP) - ĐỘI HÌNH TAM GIÁC
 *   **Đội hình**: 3 Monster xếp thành hình Tam Giác (1 Vanguard - 2 Wings).
-    *   **Vanguard (Mũi nhọn)**: Đứng đầu. Chịu đòn trực tiếp. Đối thủ BẮT BUỘC tấn công vị trí này trước (trừ khi dùng chiêu xuyên thấu/AOE).
+    *   **Vanguard (Mũi nhọn)**: Đứng đầu. Chịu đòn trực tiếp. Đối thủ BẮT BUỘC tấn công vị trí này trước.
     *   **Wings (Cánh)**: Đứng sau hỗ trợ và tích lũy. Được Vanguard che chắn.
 *   **Sinh mệnh (Pellicle)**: Mỗi Monster bắt đầu với **1 Pellicle** mặc định.
-*   **Quy tắc 1-Hit**: Không có thanh HP. 0 Pellicle + Bị đánh = **OUT**.
+*   **Quy tắc 1-Hit**: Không có thanh HP. 0 Pellicle + Bị đánh = **NECROSIS**.
 
 ### 2. QUY TẮC PELLICLE (HỆ THỐNG MÀNG)
 *   **Nạp (Reinforce)**: Đầu lượt nhận **2 Pellicle** để chia cho các Oddie (Tối đa 2 điểm/lượt).
     *   **Last Man Standing**: Nếu chỉ còn **duy nhất 1** quái vật còn sống, lượng Pellicle nhận được mỗi lượt tăng lên thành **3**.
-*   **Ngưỡng quá tải (Overload)**: Max **5 Pellicle/Monster**. Nếu nhận điểm thứ 6 -> **TỰ NỔ (OUT)**.
+*   **Ngưỡng quá tải (Overload)**: Max **5 Pellicle/Monster**. Nếu nhận điểm thứ 6 -> **TỰ NỔ (Explode)**.
     *   **Phản ứng dây chuyền (Chain Reaction)**: Khi một Monster nổ do Overload, nó gây **1 Sát thương (Thổi bay 1 Pellicle)** lên tất cả đồng đội đứng cạnh (Vanguard nổ -> Wings dính đạn và ngược lại).
 *   **Chặn đòn**: Tiêu tốn **1 Pellicle** để triệt tiêu hoàn toàn 1 đòn tấn công từ đối thủ.
 
 ### Thuật Ngữ (Glossary)
-*   **Pellicle (P)**: Đơn vị năng lượng kiêm lá chắn của Monster.
-*   **Hit Effect**: Hiệu ứng khi Monster bị trừ 1 Pellicle (bao gồm bị đánh, phản đòn, nổ lan). Thể hiện bằng việc Monster nháy đỏ (`hit-flash`) và màn hình rung (`shake`).
-*   **Pellicle Trail Effect**: Hiệu ứng khi kích hoạt kỹ năng Pellicle (VD: Lydrosome chuyền P). Monster sẽ tỏa sáng xanh lá nhẹ và có hiệu ứng Power Up.
-*   **Pellicle Trail UX**: Để kích hoạt kỹ năng chủ động (như Osmotic Flow), người chơi **Bấm chọn Monster** (Monster sẽ chớp tắt/Glow) -> Sau đó **Bấm vào Mục tiêu** để thực thi.
+*   **Cell**: Tên gọi chính thức cho các sinh vật/quái vật trong game.
+*   **Pellicle (P)**: Đơn vị năng lượng kiêm lá chắn của Cell.
+*   **Vulnerable**: Khi Cell không còn Pellicle, nó rơi vào trạng thái Nguy kịch (Vulnerable). Chỉ cần trúng thêm 1 đòn, Cell sẽ rơi vào trạng thái Necrosis.
+*   **Necrosis**: Trạng thái "chết" của một Cell. Đừng lo, sau khi nghỉ ngơi trong Container, chúng sẽ phục hồi.
+*   **Overload**: Nhận quá nhiều Pellicle sẽ khiến Cell bị nổ. Một số Cell có khả năng chứa Pellicle cao hơn bình thường.
 *   **Vanguard**: Vị trí tiền đạo (đứng đầu).
 *   **Wings**: Vị trí cánh (đứng sau).
 *   **Reinforce Phase**: Giai đoạn nạp năng lượng.
-*   **Action Phase (Trail Phase)**: Giai đoạn kích hoạt Pellicle Trail.
+*   **Action Phase**: Giai đoạn kích hoạt Pellicle Trail.
 *   **Combat Phase**: Giai đoạn hành động/tấn công.
 
 ### 3. CẤU TRÚC LƯỢT CHƠI (PHASES)
@@ -119,3 +120,9 @@ This document serves as the central repository for recording data and informatio
 *   **[FIX] Info Panel Expansion**: Cập nhật Panel thông tin hiển thị chính xác cho các P-Token và các đơn vị đã bị tiêu diệt (System Waste).
 *   **[REVERT] Visual Fidelity**: Khôi phục hệ thống vòng Pellicle (Rings) và hiệu ứng Vulnerable (0 P) theo đúng thiết kế gốc.
 *   **[CLEANUP] Loadout UI**: Tinh chỉnh giao diện Loadout Menu, loại bỏ hoàn toàn các chỉ báo trạng thái trận đấu (như OUT/Gray-out) để giữ giao diện quản lý đội hình tập trung và sạch sẽ. Hình ảnh quái vật hiện hiển thị đầy đủ màu sắc kể cả khi đã bị hạ trong trận đấu trước đó.
+*   **[POLISH] UI Aesthetics**: Triển khai hình nền riêng biệt cho Main Menu (`BG_Main.png`), Battlefield (`BG_Battle.png`) và Cell Container screen (`BG_CellContainerMenu.png`) kèm lớp phủ tối (Dark Overlay) để tăng độ tương phản.
+*   **[POLISH] Layout Optimization**: Tinh chỉnh vị trí tiêu đề và các nút chức năng tại Main Menu để tối ưu không gian hiển thị cho Artwork mới.
+*   **[POLISH] Darker Necrosis**: Giảm độ sáng của thuật ngữ **NECROSIS** xuống mức 25% (Màu #444) tạo hiệu ứng "mất năng lượng" rõ rệt.
+*   **[FIX] AI Tactical Upgrade**: Khắc phục lỗi AI tấn công vào các vị trí đã bị tiêu diệt (NECROSIS). AI hiện đã nhận diện và bỏ qua các đơn vị không còn khả năng chiến đấu.
+*   **[UPDATE] Lydrosome Refinement**: Loại bỏ hoàn toàn cơ chế **LOCK** để đơn giản hóa và cân bằng lối chơi Sniper.
+*   **[CLEANUP] Codebase Audit**: Dọn dẹp toàn bộ thuộc tính dư thừa (`isLocked`, `hasSwapped`), tối ưu hóa logic Drag & Drop và sửa lỗi cú pháp trong vòng lặp pellicle.
