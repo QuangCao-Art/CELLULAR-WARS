@@ -46,6 +46,7 @@ export function resolveHit(victim, victimIndex, team, attacker = null, attackerI
         // Trigger Death Animation before showing message and ending
         Animations.triggerDeathVisual(team, victimIndex, isVictimPlayer, () => {
             Renderer.showGameMessage(`${victim.name} is OUT!`, "gray");
+            checkGameOver(); // <-- ADDED THIS: Important to check for Game Over after death
             if (onComplete) onComplete();
         });
         return; // Stop here, wait for animation callback
@@ -172,10 +173,12 @@ export function checkGameOver() {
         gameState.isGameOver = true;
         Renderer.showGameMessage("VICTORY! Strain Eliminated.", "blue");
         Renderer.updateBattleLog("GAME OVER: PLAYER VICTORIOUS");
+        if (window.triggerGameOver) setTimeout(() => window.triggerGameOver(true), 1500);
     } else if (playerAlive.length === 0) {
         gameState.isGameOver = true;
         Renderer.showGameMessage("DEFEAT... System Failure.", "red");
         Renderer.updateBattleLog("GAME OVER: PLAYER DEFEATED");
+        if (window.triggerGameOver) setTimeout(() => window.triggerGameOver(false), 1500);
     }
 }
 

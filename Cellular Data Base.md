@@ -23,20 +23,6 @@ This document serves as the central repository for recording data and informatio
     3. **Combat Phase**: Chọn 1 quái vật để tấn công (1 attack per turn).
 - **Cơ chế Overload**: Nếu con nào nhận hạt Pellicle thứ 6 -> **TỰ NỔ**, gây sát thương lan cho đồng đội bên cạnh.
 
-## 🦖 CELLDEX SUMMARY (TÓM TẮT CÁC CHỦNG LOÀI)
-- **Cell01 - Cambihil**: Hồi phục năng lượng tức thời (Energy Burst).
-- **Cell02 - Lydrosome**: Điều phối Pellicle cho đồng đội. Offensive Trail bắn xuyên Vanguard.
-- **Cell03 - Nitrophil**: Phản sát thương khi bị đánh (Reactive Membrane).
-- **Cell04 - Phagoburst**: Khởi đầu chậm nhưng sức mạnh bộc phát. Offensive Trail bắn ra 3 shot liên tiếp.
-- **Cell05 - Fibron**: Bắt đầu trận đấu với +1 Pellicle mặc định (Reinforce Presence).
-- **Cell06 - Kerashell**: Bắt đầu trận với 2 Pellicle (Vanguard). Offensive Trail thực dụng, giá rẻ.
-- **Cell07 - Mitonegy**: Tặng Pellicle cho đồng đội khi vào trận. Offensive Trail hỗ trợ hồi phục.
-- **Cell08 - Chlarob**: Cướp Pellicle của đối thủ. Pellicle Trail tặng quà khi bị hạ.
-- **Cell09 - Dip-Alpha**: Một nửa của bộ đôi song sinh. Gây sát thương lên Vanguard địch khi bị hạ.
-- **Cell10 - Dip-Beta**: Một nửa của bộ đôi song sinh. Gây sát thương lên Wing mạnh nhất của địch khi bị hạ.
-- **Cell11 - Canobolus**: Khả năng Overload cao (Ngưỡng 7). Offensive Trail xả toàn bộ Pellicle.
-- **Double Team Bonus**: Nếu cả Dip-Alpha và Dip-Beta cùng trong đội hình (Vanguard/Wings), cả hai đều có thể tấn công trong cùng một lượt.
-
 ## 🧬 CELLULAR WARS: RULEBOOK
 
 ### 1. THIẾT LẬP (SETUP) - ĐỘI HÌNH TAM GIÁC
@@ -97,6 +83,7 @@ This document serves as the central repository for recording data and informatio
  
 | ID | Monster | Offensive Trail (Chủ động - Tốn P) | Pellicle Trail (Nội tại/Hỗ trợ) |
 | :--- | :--- | :--- | :--- |
+| **Cell00** | **Stemmy** | **Basic Strike (1P)**: Phá 1 màng đối thủ. | **None**: Không có hiệu ứng nội tại. |
 | **Cell01** | **Cambihil** | **Overgrowth (1P)**: Phá 1 màng mục tiêu. | **Energy Burst (Action Phase)**: Hồi ngay 2 Pellicle (1 lần/trận). |
 | **Cell02** | **Lydrosome** | **Hydro Shot (2P)**: Phá 1 màng. Chiến thuật bắn tỉa ưu việt, có thể bắn xuyên Vanguard. | **Osmotic Flow (Action Phase)**: Chuyển 1 Pellicle sang cho đồng đội. |
 | **Cell03** | **Nitrophil** | **Nitro Burn (1P)**: Đốt 1 Pellicle của bản thân để phá 1 màng đối thủ. | **Reactive Membrane**: Phản lại 1 sát thương lên kẻ vừa tấn công. |
@@ -113,6 +100,7 @@ This document serves as the central repository for recording data and informatio
  
 | ID | Monster | Hình ảnh | Phân loại | Mô tả Lore (Lịch sử & Đặc tính) |
 | :--- | :--- | :--- | :--- | :--- |
+| **Cell00** | **Stemmy** | ![Stemmy](Images/Stemmy.png) | Basic / Origin | **Tế bào gốc - Stem Cell**: Loại tế bào sơ khai nhất, có khả năng biến đổi thành mọi loại tế bào khác nhưng bản thân nó lại cực kỳ đơn giản. |
 | **Cell01** | **Cambihil** | ![Cambihil](Images/Cambihil.png) | Supporter / Tank | **Tầng phát sinh - Cambium**: Tế bào thực vật chuyên biệt với khả năng phân chia nhanh; nó có thể tái tạo tức thì một lượng lớn năng lượng (2P) để xoay chuyển cục diện. |
 | **Cell02** | **Lydrosome** | ![Lydrosome](Images/Lydrosome.png) | Tactician / Medic | **Tiêu thể - Lysosome**: Túi chứa Enzyme phân hủy bị nhiễm men; nó bắn ra các luồng dịch hóa học phá quấy màng tế bào của đối phương và có thể chuyển hóa lớp màng bảo vệ cho đồng đội. |
 | **Cell03** | **Nitrophil** | ![Nitrophil](Images/Nitrophil.png) | Guardian / Bouncer | **Bạch cầu trung tính**: Tế bào miễn dịch đột biến mang đặc tính nổ; nó tiêu diệt kẻ địch bằng đòn đánh tự tiêu vớt và phản đòn lập tức khi lớp màng bị xâm phạm. |
@@ -138,3 +126,6 @@ This document serves as the central repository for recording data and informatio
 *   **[FIX] AI Tactical Upgrade**: Khắc phục lỗi AI tấn công vào các vị trí đã bị tiêu diệt (NECROSIS). AI hiện đã nhận diện và bỏ qua các đơn vị không còn khả năng chiến đấu.
 *   **[UPDATE] Lydrosome Refinement**: Loại bỏ hoàn toàn cơ chế **LOCK** để đơn giản hóa và cân bằng lối chơi Sniper.
 *   **[CLEANUP] Codebase Audit**: Dọn dẹp toàn bộ thuộc tính dư thừa (`isLocked`, `hasSwapped`), tối ưu hóa logic Drag & Drop và sửa lỗi cú pháp trong vòng lặp pellicle.
+*   **[NEW] AI Simulation Profiles**: Triển khai hệ thống AI Loadout Pool với 3 cấp độ khó (Easy, Medium, Hard). AI hiện sẽ chọn ngẫu nhiên đội hình từ danh sách Preset mỗi khi bắt đầu trận đấu.
+*   **[NEW] Cell00 - Stemmy**: Tích hợp chủng loài mới "Stemmy" (Stem Cell) - thực thể sơ khai đóng vai trò là chủng loài nền tảng cho các đội hình cấp thấp.
+*   **[NEW] Settings Menu**: Thêm menu Cài đặt mới cho phép người chơi thay đổi độ khó và xem trước danh mục các hồ sơ đe dọa (Threat Profiles) của AI.

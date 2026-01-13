@@ -1,5 +1,5 @@
 import { MONSTER_DATABASE } from './data/monsters.js';
-import { gameState, CONSTANTS, createMonsterInstance, resetGameState, getReinforceAmount } from './engine/state.js';
+import { gameState, CONSTANTS, createMonsterInstance, resetGameState, getReinforceAmount, AI_PRESETS } from './engine/state.js';
 import * as Renderer from './ui/renderer.js';
 import * as Animations from './ui/animations.js';
 import * as Combat from './engine/combat.js';
@@ -24,7 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
         battlefield: document.getElementById('game-board'),
         cellContainerScreen: document.getElementById('cell-container-screen'),
         rulebookScreen: document.getElementById('rulebook-screen'),
-        databaseScreen: document.getElementById('database-screen')
+        databaseScreen: document.getElementById('database-screen'),
+        settingsScreen: document.getElementById('settings-screen'),
+        enemyLoadoutScreen: document.getElementById('enemy-loadout-screen')
     };
     Renderer.initializeSelectors(refs);
 
@@ -35,10 +37,16 @@ document.addEventListener('DOMContentLoaded', () => {
         refs.cellContainerScreen.classList.remove('hidden');
         initCellContainer();
     };
-    // Back Buttons (Except Rulebook which has special logic now)
-    document.querySelectorAll('.btn-back, #btn-db-back, #btn-battle-back, #btn-container-back').forEach(btn => {
+    // Back Buttons
+    // Back Buttons
+    document.querySelectorAll('.btn-back, #btn-db-back, #btn-battle-back, #btn-container-back, #btn-settings-back').forEach(btn => {
         if (btn) btn.onclick = showMainMenu;
     });
+
+    document.getElementById('btn-enemy-back').onclick = initSettings;
+
+    document.getElementById('btn-settings').onclick = initSettings;
+    document.getElementById('btn-view-enemy-loadouts').onclick = showEnemyLoadouts;
 
     // Special Rulebook Back Logic
     document.getElementById('btn-rulebook').onclick = () => {
@@ -71,9 +79,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- CORE GAME FLOW ---
+// --- CORE GAME FLOW ---
 function startGame() {
     document.getElementById('main-menu').classList.add('hidden');
     document.getElementById('game-board').classList.remove('hidden');
+    document.getElementById('game-over-overlay').classList.add('hidden'); // Reset overlay
 
     resetGameState();
     Renderer.renderFormation(getHandlers());
@@ -81,6 +91,57 @@ function startGame() {
     Renderer.updateInfoPanel(); // Initialize Battle Overview
     startTurn();
 }
+
+// Global hook for Game Over
+window.triggerGameOver = function (victory) {
+    const overlay = document.getElementById('game-over-overlay');
+    const title = document.getElementById('game-over-title');
+    const msg = document.getElementById('game-over-message');
+    const modal = overlay.querySelector('.modal');
+
+    overlay.classList.remove('hidden');
+
+    if (victory) {
+        const victoryPuns = [
+            "Natural selection favors the bold.",
+            "Evolution at its finest!",
+            "You've gone viral (in a good way).",
+            "Apex predator status confirmed.",
+            "Mitosis complete. Flawless duplication.",
+            "You're top of the food chain.",
+            "Cellular superiority achieved."
+        ];
+        title.innerText = "DIVISION SUCCESS";
+        title.style.color = "var(--neon-green)";
+        msg.innerText = victoryPuns[Math.floor(Math.random() * victoryPuns.length)];
+        modal.style.borderColor = "var(--neon-green)";
+        modal.style.boxShadow = "0 0 50px rgba(50, 255, 50, 0.3)";
+    } else {
+        const defeatPuns = [
+            "Your culture has been cancelled.",
+            "Back to the primordial soup with you.",
+            "Looks like you failed Biology 101.",
+            "That experiment went... poorly via natural selection.",
+            "Mutation failed. Please sanitize the lab.",
+            "Out-evolved and out-smarted.",
+            "Clean up on Aisle Petri Dish."
+        ];
+        title.innerText = "DIVISION FAILURE";
+        title.style.color = "var(--neon-red)";
+        msg.innerText = defeatPuns[Math.floor(Math.random() * defeatPuns.length)];
+        modal.style.borderColor = "var(--neon-red)";
+        modal.style.boxShadow = "0 0 50px rgba(255, 0, 0, 0.3)";
+    }
+};
+
+document.getElementById('btn-restart').innerText = "TRY AGAIN";
+document.getElementById('btn-return-menu').innerText = "BACK TO LAB";
+
+document.getElementById('btn-restart').onclick = startGame;
+document.getElementById('btn-return-menu').onclick = () => {
+    document.getElementById('game-over-overlay').classList.add('hidden');
+    showMainMenu();
+};
 
 function startTurn() {
     gameState.actionTaken = false;
@@ -135,11 +196,30 @@ function endActionPhase() {
     Renderer.updatePhaseUI();
 }
 
+// Flag to prevent double submission
+let isProcessingTurn = false;
+
 function endTurn() {
-    if (gameState.isGameOver) return;
+    if (gameState.isGameOver || isProcessingTurn) return;
+
+    isProcessingTurn = true; // Lock
+    document.getElementById('btn-end-turn').classList.add('invisible'); // Immediate UI feedback
+
     gameState.turnNumber++;
     gameState.isAITurn = !gameState.isAITurn;
+
+    // Unlock after a small delay to allow startTurn to finish initial setup
+    // But for AI turn, we might want to keep it locked? 
+    // Actually, startTurn is synchronous for setup, but AI moves are async.
+    // We just need to stop the USER from clicking AGAIN.
+    // The UI is updated in startTurn -> updatePhaseUI which hides buttons for AI turn.
+
     startTurn();
+
+    // Safety unlock after state transition (short delay)
+    setTimeout(() => {
+        isProcessingTurn = false;
+    }, 500);
 }
 
 // --- TOKEN LOGIC ---
@@ -526,6 +606,66 @@ function showMainMenu() {
     document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
     const mainMenu = document.getElementById('main-menu');
     if (mainMenu) mainMenu.classList.remove('hidden');
+}
+
+function initSettings() {
+    const settingsScreen = document.getElementById('settings-screen');
+    const mainMenu = document.getElementById('main-menu');
+    const enemyScreen = document.getElementById('enemy-loadout-screen');
+
+    mainMenu.classList.add('hidden');
+    enemyScreen.classList.add('hidden');
+    settingsScreen.classList.remove('hidden');
+
+    // Difficulty buttons
+    const diffBtns = document.querySelectorAll('.btn-difficulty');
+    diffBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.diff === gameState.enemyDifficulty);
+        btn.onclick = () => {
+            gameState.enemyDifficulty = btn.dataset.diff;
+            diffBtns.forEach(b => b.classList.toggle('active', b === btn));
+            console.log("AI Difficulty set to:", gameState.enemyDifficulty);
+        };
+    });
+}
+
+function showEnemyLoadouts() {
+    const enemyScreen = document.getElementById('enemy-loadout-screen');
+    const settingsScreen = document.getElementById('settings-screen');
+    settingsScreen.classList.add('hidden');
+    enemyScreen.classList.remove('hidden');
+
+    const container = document.getElementById('enemy-presets-container');
+    container.innerHTML = '';
+
+    console.log("Loading Enemy Loadouts from:", AI_PRESETS);
+
+    if (!AI_PRESETS) {
+        container.innerHTML = "<p>Error: AI_PRESETS not loaded.</p>";
+        return;
+    }
+
+    Object.keys(AI_PRESETS).forEach(difficulty => {
+        AI_PRESETS[difficulty].forEach((squad, index) => {
+            const card = document.createElement('div');
+            card.className = 'enemy-preset-card';
+
+            // Generate squad images safely
+            const iconsHtml = squad.map(id => {
+                const cell = MONSTER_DATABASE[id];
+                if (!cell) return `<span>[?]</span>`;
+                return `<img src="Images/${cell.name}.png" class="preset-cell-icon" title="${cell.name}">`;
+            }).join('');
+
+            card.innerHTML = `
+                <h4 style="color: var(--neon-blue); margin-bottom: 10px;">${difficulty} - TEAM ${index + 1}</h4>
+                <div class="preset-squad-icons">
+                    ${iconsHtml}
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    });
 }
 
 function initCellContainer() {

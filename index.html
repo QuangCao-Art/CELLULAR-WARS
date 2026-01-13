@@ -17,6 +17,7 @@
                 <button id="btn-start" class="btn-neon">START BATTLE</button>
                 <button id="btn-cell-container" class="btn-neon">CELL CONTAINER</button>
                 <button id="btn-rulebook" class="btn-neon">RULEBOOK</button>
+                <button id="btn-settings" class="btn-neon">SETTINGS</button>
             </div>
             <div class="version">Prototype v0.1</div>
         </div>
@@ -234,6 +235,39 @@
             <button id="btn-rb-back" class="btn-neon">BACK</button>
         </div>
 
+        <!-- Settings Screen -->
+        <div id="settings-screen" class="screen glass-panel full-screen hidden">
+            <button id="btn-settings-back" class="btn-shortcut left-top"><img src="Images/Back.png" alt="Back"></button>
+            <h2 class="screen-title">BRAIN CELL <span class="neon-text">CONTROL</span></h2>
+
+            <div class="settings-container">
+                <div class="settings-section">
+                    <h3>DIFFICULTY SELECTION</h3>
+                    <div class="difficulty-options">
+                        <button class="btn-difficulty" data-diff="BEGINNER">BEGINNER</button>
+                        <button class="btn-difficulty" data-diff="EASY">EASY</button>
+                        <button class="btn-difficulty" data-diff="MEDIUM">MEDIUM</button>
+                        <button class="btn-difficulty" data-diff="HARD">HARD</button>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>THREAT DATABASE</h3>
+                    <p class="subtitle">PRE-MADE ENEMY PROFILES</p>
+                    <button id="btn-view-enemy-loadouts" class="btn-neon">VIEW ENEMY LOADOUTS</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enemy Loadout Screen -->
+        <div id="enemy-loadout-screen" class="screen glass-panel full-screen hidden">
+            <button id="btn-enemy-back" class="btn-shortcut left-top"><img src="Images/Back.png" alt="Back"></button>
+            <h2 class="screen-title">THREAT <span class="neon-text">PROFILES</span></h2>
+            <div id="enemy-presets-container" class="presets-grid">
+                <!-- Javascript populates this -->
+            </div>
+        </div>
+
         <!-- Game Board Screen (Hidden by default) -->
         <div id="game-board" class="screen hidden">
             <!-- MAIN GAME AREA (Left Side) -->
@@ -327,16 +361,22 @@
         </div>
 
         <!-- Game Over Overlay (Moved to root to allow full board blur) -->
-        <div id="game-over-overlay" class="hidden">
-            <div class="overlay-content">
-                <h2 id="game-over-msg">DIVISION SUCCESS</h2>
-                <p>RETURNING TO BASE</p>
-            </div>
-        </div>
 
         <!-- DEBUG BUTTON -->
         <button id="btn-test-scenario" onclick="window.setupTestScenario()"
             style="position:fixed; bottom:10px; right:10px; z-index:99999; opacity:0.5;">DEBUG</button>
+
+        <!-- Game Over Overlay -->
+        <div id="game-over-overlay" class="overlay hidden">
+            <div class="modal">
+                <h2 id="game-over-title">GAME OVER</h2>
+                <p id="game-over-message">System Failure</p>
+                <div class="modal-buttons">
+                    <button id="btn-restart" class="btn-neon">RESTART</button>
+                    <button id="btn-return-menu" class="btn-neon">MAIN MENU</button>
+                </div>
+            </div>
+        </div>
 
         <script type="module" src="src/main.js"></script>
 </body>

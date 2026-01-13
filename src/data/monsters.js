@@ -1,4 +1,10 @@
 export const MONSTER_DATABASE = {
+    'cell00': {
+        id: 'cell00', name: 'Stemmy',
+        offensiveTrail: "Basic Strike (1P): Destroy 1 target Pellicle.",
+        pellicleTrail: "None",
+        info: "Stemmy (Stem Cell): An early entity representing the starting point of life; it possesses no special skills but is the purest foundation for implementing all basic strategies."
+    },
     'cell01': {
         id: 'cell01', name: 'Cambihil',
         offensiveTrail: "Overgrowth (1P): Destroy 1 target Pellicle.",
