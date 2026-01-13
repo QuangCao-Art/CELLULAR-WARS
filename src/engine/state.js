@@ -39,7 +39,8 @@ export function createMonsterInstance(dbId, isPlayer) {
         hasSwapped: false,
         isLocked: false,
         specialUsed: false,
-        deathTime: null
+        deathTime: null,
+        deathAnimPlayed: false
     };
 }
 
@@ -58,15 +59,23 @@ export function resetGameState() {
 
     // Apply Passives
     [gameState.playerTeam, gameState.enemyTeam].forEach((team, tIdx) => {
+        // Apply Team-Wide Passives first
+        const hasMitonegy = team.some(mon => mon && mon.id.includes('cell07'));
+
         team.forEach((m, idx) => {
             if (!m) return;
-            // Kerashell Start Bonus
+            // Kerashell Start Bonus (Vanguard)
             if (m.id.includes('cell06') && idx === 0) {
                 m.pellicle = 2;
             }
-            // Mitonegy Start Bonus (Global)
-            const hasMitonegy = team.some(mon => mon && mon.id.includes('cell07'));
-            if (hasMitonegy) m.pellicle += 1;
+            // Fibron Start Bonus (Individual) - Reinforce Presence
+            if (m.id.includes('cell05')) {
+                m.pellicle += 1;
+            }
+            // Mitonegy Team Bonus (+1 to all colleagues)
+            if (hasMitonegy) {
+                m.pellicle += 1;
+            }
         });
     });
 }

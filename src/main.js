@@ -78,6 +78,7 @@ function startGame() {
     resetGameState();
     Renderer.renderFormation(getHandlers());
     Renderer.renderEnemyFormation(getHandlers());
+    Renderer.updateInfoPanel(); // Initialize Battle Overview
     startTurn();
 }
 
@@ -242,8 +243,7 @@ function getHandlers() {
             slot.classList.add('drag-over');
 
             if (gameState.currentPhase === 'ACTION' && gameState.isDraggingPlayerFlag) {
-                if (slot.closest('.player-team')) Renderer.showActionIndicator(slot, 'swap');
-                else if (slot.closest('.enemy-team')) {
+                if (slot.closest('.enemy-team')) {
                     const idx = parseInt(slot.dataset.index);
                     if (idx < 3) Renderer.showActionIndicator(slot, 'attack');
                 }
@@ -303,12 +303,8 @@ function handleDropPlayerSlot(targetIndex, rawData) {
         const tokenId = rawData.split('id:')[1];
         addPellicleFromDrag(targetIndex, tokenId);
     } else if (rawData.includes('type:monster')) {
-        if (gameState.currentPhase !== 'ACTION') {
-            Renderer.showGameMessage("Cannot swap during Reinforce!", "red");
-            return;
-        }
-        const sourceIndex = parseInt(rawData.split('index:')[1]);
-        if (sourceIndex !== targetIndex) executeSwap(sourceIndex, targetIndex);
+        // Position swapping disabled as per new requirement
+        Renderer.showGameMessage("Positions are fixed!", "gray");
     } else if (rawData.includes('type:transfer')) {
         const sourceIndex = parseInt(rawData.split('index:')[1]);
         executeTransfer(sourceIndex, targetIndex);
@@ -391,23 +387,7 @@ function addPellicleToEnemyFromDrag(index, tokenId) {
     Renderer.updatePhaseUI();
 }
 
-function executeSwap(sIdx, tIdx) {
-    if (gameState.attackUsedThisTurn) { Renderer.showGameMessage("Action already taken!", "red"); return; }
-
-    // Tactic Switch Check
-    const isTacticSwitch = (sIdx < 3 !== tIdx < 3);
-    const temp = gameState.playerTeam[sIdx];
-    gameState.playerTeam[sIdx] = gameState.playerTeam[tIdx];
-    gameState.playerTeam[tIdx] = temp;
-
-    if (isTacticSwitch) {
-        gameState.attackUsedThisTurn = true;
-        gameState.actionTaken = true;
-    }
-    Renderer.renderFormation(getHandlers());
-    Renderer.updatePhaseUI();
-    Combat.checkVanguardHealth();
-}
+// executeSwap removed: All monsters stay where they have been selected in Cell Container Menu.
 
 function executeTransfer(sIdx, tIdx) {
     if (gameState.specialUsedThisTurn) return;
@@ -594,23 +574,21 @@ function initCellContainer() {
         slot.ondrop = (e) => handleSquadDrop(e, index);
 
         const content = slot.querySelector('.slot-content');
+        slot.classList.remove('is-dead', 'has-monster');
 
-        // Determine ID: Use active team if valid, otherwise fallback to saved config
-        let dbId = null;
-        if (gameState.playerTeam[index]) {
-            dbId = gameState.playerTeam[index].id;
-        } else if (gameState.savedSquadConfig[index]) {
-            dbId = gameState.savedSquadConfig[index];
-        }
+        // Always use savedSquadConfig for Loadout Screen
+        let dbId = gameState.savedSquadConfig[index];
 
         if (dbId && content) {
-            // Player IDs might have 'id_' prefix in some contexts, or e_ prefix
-            const cleanId = dbId.replace('e_', '');
-            const template = MONSTER_DATABASE[cleanId];
+            const template = MONSTER_DATABASE[dbId];
             if (template) {
+                slot.classList.add('has-monster');
                 slot.dataset.id = template.id;
+
                 content.innerHTML = `<img src="Images/${template.name.replace(/\s+/g, '')}.png" class="squad-img">`;
             }
+        } else if (content) {
+            content.innerHTML = ''; // Clear if somehow empty
         }
     });
 

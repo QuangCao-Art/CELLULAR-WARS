@@ -3,6 +3,7 @@ import { MONSTER_DATABASE } from '../data/monsters.js';
 
 // DOM References (To be initialized in main or via a setup function)
 let selectors = {};
+let currentInspection = { monster: null, isPlayer: false };
 
 export function initializeSelectors(refs) {
     selectors = refs;
@@ -54,7 +55,7 @@ export function updatePhaseUI() {
             if (gameState.turnNumber === 1) {
                 selectors.instructionMsg.innerText = "ACCLIMATION: Attacks Locked. End Turn to proceed.";
             } else {
-                selectors.instructionMsg.innerText = gameState.attackUsedThisTurn ? "Attack used. End turn?" : "Drag monster to enemy to attack, or swap slots.";
+                selectors.instructionMsg.innerText = gameState.attackUsedThisTurn ? "Attack used. End turn?" : "Drag monster to enemy to attack.";
             }
         }
     }
@@ -95,6 +96,8 @@ export function renderFormation(handlers = {}) {
         const slot = createSlotDOM(monster, index, true, handlers);
         selectors.playerFormation.appendChild(slot);
     });
+
+    refreshInfoPanel();
 }
 
 export function renderEnemyFormation(handlers = {}) {
@@ -109,6 +112,8 @@ export function renderEnemyFormation(handlers = {}) {
         const slot = createSlotDOM(monster, index, false, handlers);
         selectors.enemyFormation.appendChild(slot);
     });
+
+    refreshInfoPanel();
 }
 
 function createSlotDOM(monster, index, isPlayer, handlers = {}) {
@@ -120,8 +125,14 @@ function createSlotDOM(monster, index, isPlayer, handlers = {}) {
 
     if (monster.isDead) {
         slot.classList.add('dead');
+        // Use a dedicated persistent flag so it only plays once
+        const shouldAnimate = !monster.deathAnimPlayed;
+        if (shouldAnimate) monster.deathAnimPlayed = true;
+
+        const animationClass = shouldAnimate ? 'animate-appear' : '';
+
         slot.innerHTML = `<div class="monster dead">
-            <div class="death-marker">X</div>
+            <img src="Images/CellContainer.png" class="dead-container-icon ${animationClass}">
         </div>`;
 
         const monsterDiv = slot.querySelector('.monster');
@@ -202,6 +213,7 @@ function createSlotDOM(monster, index, isPlayer, handlers = {}) {
 }
 
 export function updateInfoPanel(monster, isPlayer) {
+    currentInspection = { monster, isPlayer };
     if (!selectors.infoPanel) return;
     const { infoPanel } = selectors;
 
@@ -217,7 +229,7 @@ export function updateInfoPanel(monster, isPlayer) {
     if (monster === 'token') {
         if (nameEl) nameEl.innerText = "PELLICLE TOKEN";
         if (imgEl) {
-            imgEl.src = "Images/P-Token.png"; // Assuming this exists or using a placeholder
+            imgEl.src = "Images/PelliclePoint.png";
             imgEl.classList.remove('hidden');
         }
         if (pellicleEl) pellicleEl.innerText = "1 / 1";
@@ -233,29 +245,59 @@ export function updateInfoPanel(monster, isPlayer) {
     }
 
     if (!monster) {
-        if (nameEl) nameEl.innerText = "SQUAD INFO";
-        if (imgEl) imgEl.classList.add('hidden');
-        if (pellicleEl) pellicleEl.innerText = "- / -";
-        if (statusEl) {
-            statusEl.innerText = "SELECT UNIT";
-            statusEl.style.color = "var(--gray)";
+        if (nameEl) nameEl.innerText = "BATTLE OVERVIEW";
+        if (imgEl) {
+            imgEl.src = "Images/TrianglePosition.png";
+            imgEl.classList.remove('hidden');
         }
-        if (attackTitleEl) attackTitleEl.innerText = "OFFENSIVE TRAIL";
-        if (attackEl) attackEl.innerText = "Hover over a monster to view its offensive capabilities.";
-        if (passiveTitleEl) passiveTitleEl.innerText = "PELLICLE TRAIL";
-        if (passiveEl) passiveEl.innerText = "Hover over a monster to view its specialized traits.";
+        if (pellicleEl) pellicleEl.innerText = `TURN ${gameState.turnNumber}`;
+        if (statusEl) {
+            statusEl.innerText = gameState.isAITurn ? "ENEMY TURN" : "YOUR TURN";
+            statusEl.style.color = gameState.isAITurn ? "var(--neon-red)" : "var(--neon-green)";
+        }
+
+        const boxes = infoPanel.querySelectorAll('.ability-box');
+        if (attackTitleEl) {
+            attackTitleEl.innerText = "ENEMY SQUAD";
+            attackTitleEl.style.color = "var(--neon-orange, #ff8c00)";
+            if (boxes[0]) boxes[0].style.borderLeftColor = "var(--neon-orange, #ff8c00)";
+        }
+        if (attackEl) {
+            attackEl.innerHTML = gameState.enemyTeam.slice(0, 3).map(m => {
+                if (m.isDead) return `<div style="color:var(--necrosis)">${m.name}: 0P [NECROSIS]</div>`;
+                const status = m.pellicle === 0 ? '<span style="color:var(--neon-red)">VULNERABLE</span>' : '<span style="color:var(--neon-green)">ACTIVE</span>';
+                return `<div>${m.name}: ${m.pellicle}P [${status}]</div>`;
+            }).join('');
+        }
+
+        if (passiveTitleEl) {
+            passiveTitleEl.innerText = "YOUR SQUAD";
+            passiveTitleEl.style.color = "var(--neon-blue)";
+            if (boxes[1]) boxes[1].style.borderLeftColor = "var(--neon-blue)";
+        }
+        if (passiveEl) {
+            passiveEl.innerHTML = gameState.playerTeam.slice(0, 3).map(m => {
+                const special = m.specialUsed ? ' (•)' : '';
+                if (m.isDead) return `<div style="color:var(--necrosis)">${m.name}: 0P [NECROSIS]${special}</div>`;
+                const status = m.pellicle === 0 ? '<span style="color:var(--neon-red)">VULNERABLE</span>' : '<span style="color:var(--neon-green)">ACTIVE</span>';
+                return `<div>${m.name}: ${m.pellicle}P [${status}]${special}</div>`;
+            }).join('');
+        }
         return;
     }
 
-    if (nameEl) nameEl.innerText = monster.name;
+    if (nameEl) nameEl.innerText = monster.isDead ? "CELL CONTAINER" : monster.name;
     if (imgEl) {
-        imgEl.src = `Images/${monster.name.replace(/\s+/g, '')}.png`;
+        imgEl.src = monster.isDead ? "Images/CellContainer.png" : `Images/${monster.name.replace(/\s+/g, '')}.png`;
         imgEl.classList.remove('hidden');
     }
-    if (pellicleEl) pellicleEl.innerText = `${monster.pellicle} / ${monster.max}`;
+    if (pellicleEl) pellicleEl.innerText = monster.isDead ? "0 / 0" : `${monster.pellicle} / ${monster.max}`;
     if (statusEl) {
         if (monster.isDead) {
-            statusEl.innerText = "SYSTEM WASTE";
+            statusEl.innerText = "NECROSIS";
+            statusEl.style.color = "var(--necrosis)";
+        } else if (monster.pellicle === 0) {
+            statusEl.innerText = "VULNERABLE";
             statusEl.style.color = "var(--neon-red)";
         } else {
             statusEl.innerText = monster.isLocked ? "LOCKED" : "ACTIVE";
@@ -263,10 +305,40 @@ export function updateInfoPanel(monster, isPlayer) {
         }
     }
 
-    if (attackTitleEl) attackTitleEl.innerText = "OFFENSIVE TRAIL";
-    if (attackEl) attackEl.innerText = monster.isDead ? "This unit's biological functions have ceased. It no longer contributes to combat systems." : monster.offensiveTrail;
-    if (passiveTitleEl) passiveTitleEl.innerText = "PELLICLE TRAIL";
-    if (passiveEl) passiveEl.innerText = monster.isDead ? "Resource extraction required. Unit out of commission." : monster.pellicleTrail;
+    const boxes = infoPanel.querySelectorAll('.ability-box');
+    if (attackTitleEl) {
+        attackTitleEl.innerText = monster.isDead ? "DECOMMISSIONED" : "OFFENSIVE TRAIL";
+        attackTitleEl.style.color = ""; // Reset to CSS default
+        if (boxes[0]) boxes[0].style.borderLeftColor = "";
+    }
+    if (attackEl) {
+        if (monster.isDead) {
+            const deadPuns = [
+                "This container is feeling a bit empty inside.",
+                "Currently serving as a very expensive paperweight.",
+                "Biological functions: 404 Not Found.",
+                "Resting in pieces (of code).",
+                "It's not dead, it's just digitally challenged.",
+                "Out of order. Please insert 2P to continue (just kidding, it's gone)."
+            ];
+            attackEl.innerText = deadPuns[Math.floor(Math.random() * deadPuns.length)];
+        } else {
+            attackEl.innerText = monster.offensiveTrail;
+        }
+    }
+
+    if (passiveTitleEl) {
+        passiveTitleEl.innerText = monster.isDead ? "BIO-SCRAP" : "PELLICLE TRAIL";
+        passiveTitleEl.style.color = ""; // Reset to CSS default
+        if (boxes[1]) boxes[1].style.borderLeftColor = "";
+    }
+    if (passiveEl) {
+        if (monster.isDead) {
+            passiveEl.innerText = "Unit status: OUT. The only trait remaining is its ability to take up space.";
+        } else {
+            passiveEl.innerText = monster.pellicleTrail;
+        }
+    }
 }
 
 export function clearActionIndicators() {
@@ -282,8 +354,12 @@ export function showActionIndicator(slot, type) {
     slot.classList.add(`${type}-indicator`);
     const badge = document.createElement('div');
     badge.className = 'action-badge';
-    badge.innerText = type === 'swap' ? 'SWAP' : 'TARGET';
+    badge.innerText = 'TARGET';
     slot.appendChild(badge);
+}
+
+export function refreshInfoPanel() {
+    updateInfoPanel(currentInspection.monster, currentInspection.isPlayer);
 }
 
 export function triggerVisualEffect(index, isPlayer, type) {

@@ -26,8 +26,8 @@ export const MONSTER_DATABASE = {
     'cell05': {
         id: 'cell05', name: 'Fibron',
         offensiveTrail: "Fiber Sting (1P): Destroy 1 target Pellicle.",
-        pellicleTrail: "Reinforce Entry: Gain +1P when swapped from Reserve to Active slot (Once per match).",
-        info: "Fibron (Fibroblast): A fiber-producing cell reinforced with micro-circuitry; it moves flexibly from the reserve to the active slot to gain extra energy and deliver low-cost piercing stings."
+        pellicleTrail: "Reinforce Presence: Starts the match with +1 Pellicle.",
+        info: "Fibron (Fibroblast): A fiber-producing cell reinforced with micro-circuitry; it possesses a flexible structure that allows it to accumulate energy immediately at the start of combat."
     },
     'cell06': {
         id: 'cell06', name: 'Kerashell',

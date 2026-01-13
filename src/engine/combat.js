@@ -122,8 +122,8 @@ export function checkVanguardHealth() {
     const wings = [gameState.playerTeam[1], gameState.playerTeam[2]].filter(m => !m.isDead);
 
     if (vanguard.isDead && wings.length > 0) {
-        Renderer.showGameMessage("VANGUARD FALLEN! Promote a Wing!", "red");
-        // We could force a UI state here if needed
+        Renderer.showGameMessage("VANGUARD FALLEN!", "red");
+        // Promotion (swapping) is no longer possible in battle.
     }
 }
 
