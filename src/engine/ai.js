@@ -110,7 +110,7 @@ export function runAIAttackPhase(endTurnCallback) {
 
         const candidates = gameState.enemyTeam
             .map((m, idx) => ({ monster: m, index: idx }))
-            .filter(item => !item.monster.isDead && item.monster.pellicle > 0 && !item.monster.isLocked && item.index < 3)
+            .filter(item => !item.monster.isDead && item.monster.pellicle > 0 && item.index < 3)
             .sort((a, b) => b.monster.pellicle - a.monster.pellicle);
 
         if (candidates.length === 0) {
@@ -154,8 +154,11 @@ export function runAIAttackPhase(endTurnCallback) {
         if (attacker.id.includes('cell011') && attacker.pellicle >= 3) {
             if (!gameState.playerTeam[0].isDead) victimIdx = 0;
             else {
-                const wings = livingPlayer.map(m => gameState.playerTeam.indexOf(m));
-                victimIdx = wings[Math.floor(Math.random() * wings.length)];
+                const wings = gameState.playerTeam.filter((m, idx) => !m.isDead && idx < 3);
+                if (wings.length > 0) {
+                    const target = wings[Math.floor(Math.random() * wings.length)];
+                    victimIdx = gameState.playerTeam.indexOf(target);
+                }
             }
 
             const count = attacker.pellicle;
@@ -186,7 +189,7 @@ export function runAIAttackPhase(endTurnCallback) {
                 const wings = livingPlayer.filter(m => gameState.playerTeam.indexOf(m) !== 0);
                 victimIdx = gameState.playerTeam.indexOf(wings[Math.floor(Math.random() * wings.length)]);
                 useAbility = true;
-            } else if (gameState.playerTeam[0].isDead) {
+            } else if (gameState.playerTeam[0].isDead && livingPlayer.length > 0) {
                 const wings = livingPlayer.map(m => gameState.playerTeam.indexOf(m));
                 victimIdx = wings[Math.floor(Math.random() * wings.length)];
                 useAbility = true;
@@ -212,7 +215,7 @@ export function runAIAttackPhase(endTurnCallback) {
         // 3. Standard Attack
         if (gameState.playerTeam[0].isDead) {
             const wings = livingPlayer.map(m => gameState.playerTeam.indexOf(m));
-            victimIdx = wings[Math.floor(Math.random() * wings.length)];
+            if (wings.length > 0) victimIdx = wings[Math.floor(Math.random() * wings.length)];
         }
 
         attacker.pellicle -= actionCost;

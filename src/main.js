@@ -86,8 +86,8 @@ function startTurn() {
     gameState.actionTaken = false;
     gameState.specialUsedThisTurn = false;
     gameState.attackUsedThisTurn = false;
-    gameState.playerTeam.forEach(m => { m.attackCount = 0; m.hasSwapped = false; m.isLocked = false; });
-    gameState.enemyTeam.forEach(m => { m.attackCount = 0; m.hasSwapped = false; m.isLocked = false; });
+    gameState.playerTeam.forEach(m => { m.attackCount = 0; });
+    gameState.enemyTeam.forEach(m => { m.attackCount = 0; });
 
     if (gameState.isAITurn) {
         AI.runAIReinforce(() => {
@@ -177,8 +177,6 @@ function spawnPellicleTokens() {
         token.addEventListener('mouseout', () => Renderer.updateInfoPanel(null));
 
         token.addEventListener('dragstart', (e) => {
-            gameState.isDraggingPellicleFlag = true;
-            gameState.isDraggingPlayerFlag = false;
             e.dataTransfer.setData('text/plain', `type:pellicle;id:${token.id}`);
             setTimeout(() => {
                 token.style.opacity = '0.3';
@@ -189,7 +187,6 @@ function spawnPellicleTokens() {
         token.addEventListener('dragend', () => {
             token.style.opacity = '1';
             token.style.pointerEvents = 'auto'; // Restore interaction
-            gameState.isDraggingPellicleFlag = false;
         });
 
         container.appendChild(token);
@@ -221,14 +218,12 @@ function getHandlers() {
             }
 
             gameState.draggedIndex = index;
-            gameState.isDraggingPlayerFlag = true;
             const dragType = isTransfer ? 'type:transfer' : 'type:monster';
             e.dataTransfer.setData('text/plain', `${dragType};index:${index}`);
             setTimeout(() => e.target.style.opacity = '0.5', 0);
         },
         handleDragEnd: (e) => {
             e.target.style.opacity = '1';
-            gameState.isDraggingPlayerFlag = false;
             Renderer.clearActionIndicators();
             document.querySelectorAll('.slot').forEach(s => s.classList.remove('drag-over', 'invalid-target', 'target-lock'));
         },
@@ -242,7 +237,7 @@ function getHandlers() {
             const slot = e.currentTarget;
             slot.classList.add('drag-over');
 
-            if (gameState.currentPhase === 'ACTION' && gameState.isDraggingPlayerFlag) {
+            if (gameState.currentPhase === 'ACTION') {
                 if (slot.closest('.enemy-team')) {
                     const idx = parseInt(slot.dataset.index);
                     if (idx < 3) Renderer.showActionIndicator(slot, 'attack');
@@ -424,11 +419,6 @@ function triggerCombatSequence(aIdx, vIdx) {
     }
     if (attacker.attackCount > 0) {
         console.log("Combat aborted: attacker.attackCount > 0");
-        return;
-    }
-
-    if (attacker.isLocked) {
-        Renderer.showGameMessage(`${attacker.name} is LOCKED and cannot act!`, "blue");
         return;
     }
 

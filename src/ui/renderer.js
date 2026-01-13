@@ -148,7 +148,6 @@ function createSlotDOM(monster, index, isPlayer, handlers = {}) {
         monsterDiv.classList.add('vulnerable');
     }
     monsterDiv.dataset.id = monster.id;
-    monsterDiv.style.borderColor = monster.isLocked ? 'var(--neon-blue)' : '';
 
     monsterDiv.innerHTML = `
         <img src="Images/${monster.name.replace(/\s+/g, '')}.png" alt="${monster.name}">
@@ -300,8 +299,8 @@ export function updateInfoPanel(monster, isPlayer) {
             statusEl.innerText = "VULNERABLE";
             statusEl.style.color = "var(--neon-red)";
         } else {
-            statusEl.innerText = monster.isLocked ? "LOCKED" : "ACTIVE";
-            statusEl.style.color = monster.isLocked ? "var(--neon-blue)" : "var(--neon-green)";
+            statusEl.innerText = "ACTIVE";
+            statusEl.style.color = "var(--neon-green)";
         }
     }
 

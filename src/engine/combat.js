@@ -41,11 +41,6 @@ export function resolveHit(victim, victimIndex, team, attacker = null, attackerI
 
     if (victim.pellicle > 0) {
         victim.pellicle -= 1;
-        // Lydrosome Effect: Biochemical Lock
-        if (attacker && attacker.id.includes('cell02')) {
-            victim.isLocked = true;
-            Renderer.showGameMessage(`${victim.name} LOCKED!`, "blue");
-        }
     } else {
         handleMonsterDeath(victim, victimIndex, team, isVictimPlayer);
         // Trigger Death Animation before showing message and ending

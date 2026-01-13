@@ -11,8 +11,6 @@ export const gameState = {
     actionTaken: false,
     isGameOver: false,
     draggedIndex: null,
-    isDraggingPlayerFlag: false,
-    isDraggingPellicleFlag: true, // Internal flag for drag state
     selectedAbilitySourceIndex: null,
     specialUsedThisTurn: false,
     attackUsedThisTurn: false,
@@ -36,8 +34,6 @@ export function createMonsterInstance(dbId, isPlayer) {
         isDead: false,
         hasReflectedThisAction: false,
         attackCount: 0,
-        hasSwapped: false,
-        isLocked: false,
         specialUsed: false,
         deathTime: null,
         deathAnimPlayed: false

@@ -85,7 +85,7 @@ This document serves as the central repository for recording data and informatio
 | ID | Monster | Offensive Trail (Chủ động - Tốn P) | Pellicle Trail (Nội tại/Hỗ trợ) |
 | :--- | :--- | :--- | :--- |
 | **Cell01** | **Cambihil** | **Overgrowth (1P)**: Phá 1 màng mục tiêu. | **Energy Burst (Action Phase)**: Hồi ngay 2 Pellicle (1 lần/trận). |
-| **Cell02** | **Lydrosome** | **Hydro Shot (2P)**: Phá 1 màng. Phá vỡ liên kết Enzyme khiến đối phương bị **KHÓA (LOCK)**. Có thể bắn xuyên Vanguard. | **Osmotic Flow (Action Phase)**: Chuyển 1 Pellicle sang cho đồng đội. |
+| **Cell02** | **Lydrosome** | **Hydro Shot (2P)**: Phá 1 màng. Chiến thuật bắn tỉa ưu việt, có thể bắn xuyên Vanguard. | **Osmotic Flow (Action Phase)**: Chuyển 1 Pellicle sang cho đồng đội. |
 | **Cell03** | **Nitrophil** | **Nitro Burn (1P)**: Đốt 1 Pellicle của bản thân để phá 1 màng đối thủ. | **Reactive Membrane**: Phản lại 1 sát thương lên kẻ vừa tấn công. |
 | **Cell04** | **Phagoburst** | **Triple Pop (2P)**: Bắn liên tiếp 3 shot (Phá 3 màng). | **Heavy Primer**: Lượt 1 không nạp P. Các lượt sau max 1P/lượt. |
 | **Cell05** | **Fibron** | **Fiber Sting (1P)**: Phá 1 màng mục tiêu. | **Reinforce Presence**: Bắt đầu trận đấu với +1 Pellicle. |
@@ -101,7 +101,7 @@ This document serves as the central repository for recording data and informatio
 | ID | Monster | Hình ảnh | Phân loại | Mô tả Lore (Lịch sử & Đặc tính) |
 | :--- | :--- | :--- | :--- | :--- |
 | **Cell01** | **Cambihil** | ![Cambihil](Images/Cambihil.png) | Supporter / Tank | **Tầng phát sinh - Cambium**: Tế bào thực vật chuyên biệt với khả năng phân chia nhanh; nó có thể tái tạo tức thì một lượng lớn năng lượng (2P) để xoay chuyển cục diện. |
-| **Cell02** | **Lydrosome** | ![Lydrosome](Images/Lydrosome.png) | Tactician / Medic | **Tiêu thể - Lysosome**: Túi chứa Enzyme phân hủy bị nhiễm men; nó tiết dịch khóa chặt các phản ứng sinh hóa của địch và có thể chuyển hóa lớp màng bảo vệ cho đồng đội. |
+| **Cell02** | **Lydrosome** | ![Lydrosome](Images/Lydrosome.png) | Tactician / Medic | **Tiêu thể - Lysosome**: Túi chứa Enzyme phân hủy bị nhiễm men; nó bắn ra các luồng dịch hóa học phá quấy màng tế bào của đối phương và có thể chuyển hóa lớp màng bảo vệ cho đồng đội. |
 | **Cell03** | **Nitrophil** | ![Nitrophil](Images/Nitrophil.png) | Guardian / Bouncer | **Bạch cầu trung tính**: Tế bào miễn dịch đột biến mang đặc tính nổ; nó tiêu diệt kẻ địch bằng đòn đánh tự tiêu vớt và phản đòn lập tức khi lớp màng bị xâm phạm. |
 | **Cell04** | **Phagoburst** | ![Phagoburst](Images/Phagoburst.png) | Burst Damager | **Tế bào thực bào - Phagocyte**: Kẻ dọn dẹp khổng lồ với cấu trúc đa nhân phức tạp; nó hấp thụ năng lượng cực chậm nhưng có thể kích nổ một đợt 3 phát bắn hủy diệt mục tiêu. |
 | **Cell05** | **Fibron** | ![Fibron](Images/Fibron.png) | Mobility Support | **Tế bào sợi - Fibroblast**: Tế bào tạo liên kết được gia cố vi mạch; nó sở hữu cấu trúc linh hoạt giúp tích lũy năng lượng sớm ngay khi bắt đầu trận đấu. |
