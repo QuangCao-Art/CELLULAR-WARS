@@ -2,19 +2,7 @@
 
 This document serves as the central repository for recording data and information regarding the **CELLULAR WARS** game project.
 
-## �️ CORE PROJECT CONSTRAINTS (GHOST-MATRIX PROTOCOL)
-*These rules are anchored to prevent regression. Do NOT modify without explicit User approval.*
-
-1.  **Terminology**: Always refer to organisms as **Cells** (Official term). Avoid "Monsters" or "Oddies" in UI/Logs.
-2.  **Fixed Formations**: Swapping positions during battle is **Disabled**. Cells remain in their Loadout positions.
-3.  **Vanguard Shielding**: Wings are **Untargetable** unless the Vanguard is in **Necrosis** (except for Sniper/Hydro Shot-style bypass abilities).
-4.  **Visual DNA**:
-    *   **Necrosis**: Always uses **#444** (Very dark gray, 25% brightness) to represent shutdown.
-    *   **Death FX**: Uses the "Heavy Drop" animation for containers with a bounce impact.
-    *   **Layout**: Battlefield must be vertically centered to match background circles (CSS `top: 10px`).
-5.  **Mechanic Purge**: No **LOCK** (Biochemical constraint) mechanic exists. Terminology is strictly **ACTIVE**, **VULNERABLE**, and **NECROSIS**.
-
-## �📌 QUICK START SUMMARY (TÓM TẮT LUẬT CHƠI)
+## 📌 QUICK START SUMMARY (TÓM TẮT LUẬT CHƠI)
 - **Mục tiêu**: Tiêu diệt toàn bộ 3 quái vật của đối thủ.
 - **Đội hình**: Xếp hình tam giác (**1 Vanguard** - 2 Wings). Vanguard phải bị tiêu diệt trước (trừ đòn xuyên thấu).
 - **Lượt chơi**:
