@@ -1,12 +1,18 @@
 import { gameState, CONSTANTS } from '../engine/state.js';
 import { MONSTER_DATABASE } from '../data/monsters.js';
+import { CARDS_DATABASE } from '../data/cards.js';
 
 // DOM References (To be initialized in main or via a setup function)
 let selectors = {};
 let currentInspection = { monster: null, isPlayer: false };
+let handlersCache = {};
 
 export function initializeSelectors(refs) {
     selectors = refs;
+}
+
+export function setHandlersCache(handlers) {
+    handlersCache = handlers;
 }
 
 export function showGameMessage(text, color = 'white') {
@@ -83,8 +89,11 @@ export function getSlotElement(index, isPlayer) {
     return document.querySelector(`${teamClass} .slot[data-index="${index}"]`);
 }
 
-export function renderFormation(handlers = {}) {
+export function renderFormation(handlers = null) {
     if (!selectors.playerFormation) return;
+    if (handlers) handlersCache = handlers;
+    const finalHandlers = handlers || handlersCache;
+
     selectors.playerFormation.innerHTML = '';
 
     // Re-add background zones
@@ -93,15 +102,18 @@ export function renderFormation(handlers = {}) {
     selectors.playerFormation.appendChild(zones);
 
     gameState.playerTeam.forEach((monster, index) => {
-        const slot = createSlotDOM(monster, index, true, handlers);
+        const slot = createSlotDOM(monster, index, true, finalHandlers);
         selectors.playerFormation.appendChild(slot);
     });
 
     refreshInfoPanel();
 }
 
-export function renderEnemyFormation(handlers = {}) {
+export function renderEnemyFormation(handlers = null) {
     if (!selectors.enemyFormation) return;
+    if (handlers) handlersCache = handlers;
+    const finalHandlers = handlers || handlersCache;
+
     selectors.enemyFormation.innerHTML = '';
 
     const zones = document.createElement('div');
@@ -109,7 +121,7 @@ export function renderEnemyFormation(handlers = {}) {
     selectors.enemyFormation.appendChild(zones);
 
     gameState.enemyTeam.forEach((monster, index) => {
-        const slot = createSlotDOM(monster, index, false, handlers);
+        const slot = createSlotDOM(monster, index, false, finalHandlers);
         selectors.enemyFormation.appendChild(slot);
     });
 
@@ -139,6 +151,13 @@ function createSlotDOM(monster, index, isPlayer, handlers = {}) {
         monsterDiv.onmouseenter = () => handlers.handleMouseEnter && handlers.handleMouseEnter(monster, isPlayer, index);
         monsterDiv.onmouseleave = () => handlers.handleMouseLeave && handlers.handleMouseLeave();
 
+        // ENABLE DROP ON DEAD SLOTS (For global card effects)
+        slot.ondragover = (e) => e.preventDefault();
+        slot.ondrop = (e) => {
+            e.preventDefault();
+            handlers.handleDrop && handlers.handleDrop(e, index, isPlayer);
+        };
+
         return slot;
     }
 
@@ -146,6 +165,9 @@ function createSlotDOM(monster, index, isPlayer, handlers = {}) {
     monsterDiv.className = 'monster';
     if (monster.pellicle === 0 && !monster.isDead) {
         monsterDiv.classList.add('vulnerable');
+    }
+    if (monster.isMarked) {
+        monsterDiv.classList.add('marked');
     }
     monsterDiv.dataset.id = monster.id;
 
@@ -211,6 +233,35 @@ function createSlotDOM(monster, index, isPlayer, handlers = {}) {
     return slot;
 }
 
+
+function applyGlowRules(color) {
+    const sidebar = document.querySelector('.right-sidebar');
+    const previewContainer = document.querySelector('.monster-preview-container');
+    const imgEl = document.getElementById('panel-img');
+    const nameEl = document.getElementById('panel-name');
+
+    let baseHex = "#ffffff";
+    if (color === "var(--neon-pink)") baseHex = "#ff00cc";
+    else if (color === "var(--neon-green)") baseHex = "#0aff00";
+    else if (color === "var(--neon-blue)") baseHex = "#00f3ff";
+    else if (color === "white") baseHex = "#ffffff";
+
+    if (sidebar) {
+        sidebar.style.borderLeftColor = baseHex;
+        sidebar.style.boxShadow = `-5px 0 20px ${baseHex}33`;
+    }
+    if (previewContainer) {
+        previewContainer.style.borderColor = `${baseHex}33`;
+        previewContainer.style.background = `radial-gradient(circle, ${baseHex}1a 0%, transparent 70%)`;
+    }
+    if (imgEl) {
+        imgEl.style.filter = `drop-shadow(0 0 15px ${baseHex}80)`;
+    }
+    if (nameEl) {
+        nameEl.style.textShadow = `0 0 10px ${baseHex}`;
+    }
+}
+
 export function updateInfoPanel(monster, isPlayer) {
     currentInspection = { monster, isPlayer };
     if (!selectors.infoPanel) return;
@@ -218,6 +269,7 @@ export function updateInfoPanel(monster, isPlayer) {
 
     const nameEl = document.getElementById('panel-name');
     const imgEl = document.getElementById('panel-img');
+    const pellicleLabelEl = document.getElementById('panel-pellicle-label');
     const pellicleEl = document.getElementById('panel-pellicle');
     const statusEl = document.getElementById('panel-status');
     const attackTitleEl = document.getElementById('panel-attack-title');
@@ -226,30 +278,55 @@ export function updateInfoPanel(monster, isPlayer) {
     const passiveEl = document.getElementById('panel-passive');
 
     if (monster === 'token') {
-        if (nameEl) nameEl.innerText = "PELLICLE TOKEN";
+        applyGlowRules("white");
+        if (nameEl) {
+            nameEl.innerText = "PELLICLE TOKEN";
+            nameEl.style.color = "white";
+        }
         if (imgEl) {
             imgEl.src = "Images/PelliclePoint.png";
             imgEl.classList.remove('hidden');
         }
-        if (pellicleEl) pellicleEl.innerText = "1 / 1";
+        if (pellicleLabelEl) pellicleLabelEl.innerText = "PELLICLES:";
+        if (pellicleEl) {
+            pellicleEl.innerText = "1 / 1";
+            pellicleEl.style.color = "white";
+        }
         if (statusEl) {
             statusEl.innerText = "STABLE";
             statusEl.style.color = "var(--neon-blue)";
         }
-        if (attackTitleEl) attackTitleEl.innerText = "SYSTEM RESOURCE";
+        if (attackTitleEl) {
+            attackTitleEl.innerText = "SYSTEM RESOURCE";
+            attackTitleEl.style.color = "white";
+        }
         if (attackEl) attackEl.innerText = "Essential data unit used to reinforce unit integrity and catalyze cellular growth.";
-        if (passiveTitleEl) passiveTitleEl.innerText = "INTEGRATION";
+        if (passiveTitleEl) {
+            passiveTitleEl.innerText = "INTEGRATION";
+            passiveTitleEl.style.color = "white";
+        }
         if (passiveEl) passiveEl.innerText = "Drag onto a monster to restore 1 Pellicle. Can be used during the Reinforce Phase.";
+
+        const boxes = document.querySelectorAll('#info-panel .ability-box');
+        boxes.forEach(box => box.style.borderLeftColor = "white");
         return;
     }
 
     if (!monster) {
-        if (nameEl) nameEl.innerText = "BATTLE OVERVIEW";
+        applyGlowRules("white");
+        if (nameEl) {
+            nameEl.innerText = "BATTLE OVERVIEW";
+            nameEl.style.color = "white";
+        }
         if (imgEl) {
             imgEl.src = "Images/TrianglePosition.png";
             imgEl.classList.remove('hidden');
         }
-        if (pellicleEl) pellicleEl.innerText = `TURN ${gameState.turnNumber}`;
+        if (pellicleLabelEl) pellicleLabelEl.innerText = "PELLICLES:";
+        if (pellicleEl) {
+            pellicleEl.innerText = `TURN ${gameState.turnNumber}`;
+            pellicleEl.style.color = "white";
+        }
         if (statusEl) {
             statusEl.innerText = gameState.isAITurn ? "ENEMY TURN" : "YOUR TURN";
             statusEl.style.color = gameState.isAITurn ? "var(--neon-red)" : "var(--neon-green)";
@@ -258,7 +335,7 @@ export function updateInfoPanel(monster, isPlayer) {
         const boxes = infoPanel.querySelectorAll('.ability-box');
         if (attackTitleEl) {
             attackTitleEl.innerText = "ENEMY SQUAD";
-            attackTitleEl.style.color = "var(--neon-orange, #ff8c00)";
+            attackTitleEl.style.color = "white"; // Overriding the orange for consistency with user request
             if (boxes[0]) boxes[0].style.borderLeftColor = "var(--neon-orange, #ff8c00)";
         }
         if (attackEl) {
@@ -271,9 +348,13 @@ export function updateInfoPanel(monster, isPlayer) {
 
         if (passiveTitleEl) {
             passiveTitleEl.innerText = "YOUR SQUAD";
-            passiveTitleEl.style.color = "var(--neon-blue)";
-            if (boxes[1]) boxes[1].style.borderLeftColor = "var(--neon-blue)";
+            passiveTitleEl.style.color = "white";
+            if (boxes[1]) boxes[1].style.borderLeftColor = "white";
         }
+
+        // Ensure both boxes are white for overview
+        const allBoxes = document.querySelectorAll('#info-panel .ability-box');
+        allBoxes.forEach(box => box.style.borderLeftColor = "white");
         if (passiveEl) {
             passiveEl.innerHTML = gameState.playerTeam.slice(0, 3).map(m => {
                 const special = m.specialUsed ? ' (•)' : '';
@@ -285,12 +366,20 @@ export function updateInfoPanel(monster, isPlayer) {
         return;
     }
 
-    if (nameEl) nameEl.innerText = monster.isDead ? "CELL CONTAINER" : monster.name;
+    applyGlowRules("var(--neon-green)");
+
+    if (nameEl) {
+        nameEl.innerText = monster.isDead ? "CELL CONTAINER" : monster.name;
+        nameEl.style.color = "var(--neon-green)";
+    }
     if (imgEl) {
         imgEl.src = monster.isDead ? "Images/CellContainer.png" : `Images/${monster.name.replace(/\s+/g, '')}.png`;
         imgEl.classList.remove('hidden');
     }
-    if (pellicleEl) pellicleEl.innerText = monster.isDead ? "0 / 0" : `${monster.pellicle} / ${monster.max}`;
+    if (pellicleEl) {
+        pellicleEl.innerText = monster.isDead ? "0 / 0" : `${monster.pellicle} / ${monster.max}`;
+        pellicleEl.style.color = "var(--neon-green)";
+    }
     if (statusEl) {
         if (monster.isDead) {
             statusEl.innerText = "NECROSIS";
@@ -307,8 +396,8 @@ export function updateInfoPanel(monster, isPlayer) {
     const boxes = infoPanel.querySelectorAll('.ability-box');
     if (attackTitleEl) {
         attackTitleEl.innerText = monster.isDead ? "DECOMMISSIONED" : "OFFENSIVE TRAIL";
-        attackTitleEl.style.color = ""; // Reset to CSS default
-        if (boxes[0]) boxes[0].style.borderLeftColor = "";
+        attackTitleEl.style.color = "var(--neon-green)";
+        if (boxes[0]) boxes[0].style.borderLeftColor = "var(--neon-green)";
     }
     if (attackEl) {
         if (monster.isDead) {
@@ -328,8 +417,8 @@ export function updateInfoPanel(monster, isPlayer) {
 
     if (passiveTitleEl) {
         passiveTitleEl.innerText = monster.isDead ? "BIO-SCRAP" : "PELLICLE TRAIL";
-        passiveTitleEl.style.color = ""; // Reset to CSS default
-        if (boxes[1]) boxes[1].style.borderLeftColor = "";
+        passiveTitleEl.style.color = "var(--neon-green)";
+        if (boxes[1]) boxes[1].style.borderLeftColor = "var(--neon-green)";
     }
     if (passiveEl) {
         if (monster.isDead) {
@@ -337,6 +426,69 @@ export function updateInfoPanel(monster, isPlayer) {
         } else {
             passiveEl.innerText = monster.pellicleTrail;
         }
+    }
+}
+
+export function updateCardInfoPanel(cardData) {
+    if (!selectors.infoPanel) return;
+    applyGlowRules("var(--neon-pink)");
+
+    const nameEl = selectors.infoPanel.querySelector('#panel-name');
+    const imgEl = selectors.infoPanel.querySelector('#panel-img');
+    const pellicleLabelEl = selectors.infoPanel.querySelector('#panel-pellicle-label');
+    const pellicleEl = selectors.infoPanel.querySelector('#panel-pellicle');
+    const statusEl = selectors.infoPanel.querySelector('#panel-status');
+
+    // Ability Areas
+    const attackTitleEl = selectors.infoPanel.querySelector('#panel-attack-title');
+    const attackEl = selectors.infoPanel.querySelector('#panel-attack');
+    const passiveTitleEl = selectors.infoPanel.querySelector('#panel-passive-title');
+    const passiveEl = selectors.infoPanel.querySelector('#panel-passive');
+
+    if (pellicleLabelEl) pellicleLabelEl.innerText = "PELLICLES:";
+
+    if (nameEl) {
+        nameEl.innerText = cardData.name;
+        nameEl.style.color = "var(--neon-pink)"; // Pink title
+    }
+    if (imgEl) {
+        imgEl.src = cardData.icon;
+        imgEl.classList.remove('hidden');
+    }
+    if (pellicleLabelEl) {
+        pellicleLabelEl.innerText = "TYPE:";
+    }
+    if (pellicleEl) {
+        pellicleEl.innerText = cardData.type === 'global' ? "GLOBAL DEBUFF" : "TARGETED ABILITY";
+        pellicleEl.style.color = "var(--neon-pink)"; // Use neon-pink to match the title
+    }
+    if (statusEl) {
+        if (!gameState.cardsUnlocked) {
+            statusEl.innerText = "Cooking...";
+            statusEl.style.color = "var(--neon-yellow)";
+        } else {
+            statusEl.innerText = "READY";
+            statusEl.style.color = "var(--neon-blue)";
+        }
+    }
+
+    if (attackTitleEl) {
+        attackTitleEl.innerText = "CHEMICAL EFFECT";
+        attackTitleEl.style.color = "var(--neon-pink)"; // Pink title
+    }
+
+    const boxes = selectors.infoPanel.querySelectorAll('.ability-box');
+    boxes.forEach(box => box.style.borderLeftColor = "var(--neon-pink)");
+    if (attackEl) {
+        attackEl.innerText = cardData.desc;
+    }
+
+    if (passiveTitleEl) {
+        passiveTitleEl.innerText = "TYPE";
+        passiveTitleEl.style.color = "var(--neon-pink)"; // Pink title
+    }
+    if (passiveEl) {
+        passiveEl.innerText = cardData.type === 'global' ? "GLOBAL DEBUFF" : "TARGETED ABILITY";
     }
 }
 
@@ -384,4 +536,57 @@ export function triggerVisualEffect(index, isPlayer, type) {
         monsterDiv.classList.add(effectClass);
         setTimeout(() => monsterDiv.classList.remove(effectClass), 500);
     }
+}
+
+export function renderHand(handlers = {}) {
+    if (!selectors.heroCardZone) return;
+
+    // Show/Hide container based on hand size
+    if (gameState.playerHand.length === 0) {
+        selectors.heroCardZone.classList.add('hidden');
+        return;
+    }
+    selectors.heroCardZone.classList.remove('hidden');
+    selectors.heroCardZone.innerHTML = '';
+
+    gameState.playerHand.forEach(cardId => {
+        const cardData = CARDS_DATABASE[cardId];
+        if (!cardData) return;
+
+        const cardEl = document.createElement('div');
+        cardEl.className = 'action-card';
+        if (!gameState.cardsUnlocked) {
+            cardEl.classList.add('locked');
+            cardEl.title = "Unlocks on Turn 3";
+        } else {
+            cardEl.classList.add('draggable');
+            cardEl.draggable = true;
+            cardEl.style.boxShadow = `0 0 10px ${cardData.color || 'white'}`;
+            cardEl.style.borderColor = cardData.color || 'white';
+        }
+
+        // Card Content
+        cardEl.innerHTML = `
+            <img src="${cardData.icon}" class="card-icon" onerror="this.src='Images/PelliclePoint.png'">
+            <div class="card-name" style="color:${cardData.color}">${cardData.name}</div>
+            <div class="card-desc">${cardData.desc}</div>
+        `;
+
+        // Drag Logic & Interaction
+        if (gameState.cardsUnlocked) {
+            cardEl.ondragstart = (e) => {
+                e.dataTransfer.setData('text/plain', `type:card,id:${cardId}`);
+                cardEl.style.opacity = '0.5';
+            };
+            cardEl.ondragend = (e) => {
+                cardEl.style.opacity = '1';
+            };
+        }
+
+        // Info Panel Hover
+        cardEl.onmouseenter = () => updateCardInfoPanel(cardData);
+        cardEl.onmouseleave = () => updateInfoPanel(); // Revert to game state
+
+        selectors.heroCardZone.appendChild(cardEl);
+    });
 }

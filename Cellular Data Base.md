@@ -13,13 +13,14 @@ This document serves as the central repository for recording data and informatio
     *   **Death FX**: Uses the "Heavy Drop" animation for containers with a bounce impact.
     *   **Layout**: Battlefield must be vertically centered to match background circles (CSS `top: 10px`).
 5.  **Mechanic Purge**: No **LOCK** (Biochemical constraint) mechanic exists. Terminology is strictly **ACTIVE**, **VULNERABLE**, and **NECROSIS**.
+6.  **Chemical Warfare**: Action Cards are strictly **Locked until Turn 3**. Usage is limited to the **Action Phase** only. They are consumable (1-time use).
 
-## �📌 QUICK START SUMMARY (TÓM TẮT LUẬT CHƠI)
+## 📌 QUICK START SUMMARY (TÓM TẮT LUẬT CHƠI)
 - **Mục tiêu**: Tiêu diệt toàn bộ 3 quái vật của đối thủ.
 - **Đội hình**: Xếp hình tam giác (**1 Vanguard** - 2 Wings). Vanguard phải bị tiêu diệt trước (trừ đòn xuyên thấu).
 - **Lượt chơi**:
     1. **Reinforce Phase**: Nhận 2 Pellicle, chia cho quái vật
-    2. **Action Phase**: Kích hoạt **Pellicle Trail** (1 action per turn).
+    2. **Action Phase**: Kích hoạt **Pellicle Trail** HOẶC dùng **Action Card** (Từ Lượt 3).
     3. **Combat Phase**: Chọn 1 quái vật để tấn công (1 attack per turn).
 - **Cơ chế Overload**: Nếu con nào nhận hạt Pellicle thứ 6 -> **TỰ NỔ**, gây sát thương lan cho đồng đội bên cạnh.
 
@@ -47,6 +48,8 @@ This document serves as the central repository for recording data and informatio
 *   **Overload**: Nhận quá nhiều Pellicle sẽ khiến Cell bị nổ. Một số Cell có khả năng chứa Pellicle cao hơn bình thường.
 *   **Vanguard**: Vị trí tiền đạo (đứng đầu).
 *   **Wings**: Vị trí cánh (đứng sau).
+*   **Action Cards (Vũ khí hóa học)**: Những thẻ bài bổ trợ, đại diện cho tác nhân ngoại cảnh (hóa chất, môi trường). Hiển thị từ đầu trận nhưng chỉ kích hoạt được từ Turn 3.
+*   **Marked Status**: Trạng thái bị đánh dấu (chữ X). Cell bị Marked sẽ chịu **x2 Sát thương** trong lượt tiếp theo.
 *   **Reinforce Phase**: Giai đoạn nạp năng lượng.
 *   **Action Phase**: Giai đoạn kích hoạt Pellicle Trail.
 *   **Combat Phase**: Giai đoạn hành động/tấn công.
@@ -60,13 +63,18 @@ This document serves as the central repository for recording data and informatio
 ### 4. CƠ CHẾ CHIẾN ĐẤU & DI CHUYỂN
 *   **Pellicle Burn**: Mọi đòn tấn công đều tốn Pellicle. Không có đòn đánh miễn phí.
 
-### 5. QUY TẮC THÍCH NGHI LƯỢT ĐẦU (Acclimatization)
+### 5. CƠ CHẾ ACTION CARDS (TÁC NHÂN HÓA HỌC)
+*   **Mở khóa**: Action Cards xuất hiện trên Battlefield từ đầu trận (Lượt 1) nhưng bị **KHÓA**. Chúng sẽ tự động **MỞ KHÓA** vào đầu **Lượt 3**.
+*   **Sử dụng**: Kéo thả thẻ vào đội hình đối thủ trong **Action Phase**.
+*   **Danh sách thẻ**:
+    *   **ETHANOL (Cồn)**: "Vệ sinh diện rộng". Phá hủy **1 Pellicle** của **TẤT CẢ** Monster đối thủ.
+    *   **PENICILLIN (Kháng sinh)**: "Đánh dấu mục tiêu". Gắn trạng thái **MARKED** lên 1 Monster. Monster này sẽ chịu **x2 Sát thương** (Critical Hit) trong lần bị tấn công tiếp theo.
+
+### 6. QUY TẮC THÍCH NGHI LƯỢT ĐẦU (Acclimatization)
 *   **Lượt 1 (Người đi trước)**: Chỉ được Nạp (Reinforce). Khóa cả Pellicle Trail và Offensive Trail.
 *   **Lượt 1 (Người đi sau)**: Được phép dùng Pellicle Trail (tự vệ) nhưng vẫn khóa Offensive Trail.
 *   **Từ lượt 2 trở đi**: Mở khóa hoàn toàn.
 
-### 6. QUY TẮC KHU VỰC DỰ BỊ (DEPRECATED)
-*   **Lưu ý**: Hệ thống dự bị hiện không áp dụng trong bản Ghost-Matrix. Đội hình là cố định.
 
 ### 7. CHIẾN THUẬT CỐT LÕI
 *   **Quản lý rủi ro**: Tấn công càng mạnh thì tự vệ càng yếu (vì đốt sạch Pellicle).
@@ -129,3 +137,16 @@ This document serves as the central repository for recording data and informatio
 *   **[NEW] AI Simulation Profiles**: Triển khai hệ thống AI Loadout Pool với 3 cấp độ khó (Easy, Medium, Hard). AI hiện sẽ chọn ngẫu nhiên đội hình từ danh sách Preset mỗi khi bắt đầu trận đấu.
 *   **[NEW] Cell00 - Stemmy**: Tích hợp chủng loài mới "Stemmy" (Stem Cell) - thực thể sơ khai đóng vai trò là chủng loài nền tảng cho các đội hình cấp thấp.
 *   **[NEW] Settings Menu**: Thêm menu Cài đặt mới cho phép người chơi thay đổi độ khó và xem trước danh mục các hồ sơ đe dọa (Threat Profiles) của AI.
+*   **[NEW] Action Cards**: Triển khai hệ thống "Chemical Weapons" mới. Người chơi nhận được 2 thẻ bài (Ethanol & Penicillin) vào đầu Lượt 3 để xoay chuyển cục diện trận đấu.
+*   **[POLISH] Cell Container Layout**: Restructured the Loadout menu to a side-by-side layout for Monsters and Action Cards, ensuring visual symmetry and improved usability.
+*   **[NEW] Card Detail Modal**: Implemented dynamic modals for Action Cards with specialized labels ("CHEMICAL EFFECT", "SPECIAL SPECS") and unique bio/lore information.
+*   **[FIX] Ethanol Card Global Effect**: Fixed critical bug where Ethanol failed to trigger. Implemented support for global card drops even on **NECROSIS** slots to ensure field-wide effects resolve correctly.
+*   **[UPDATE] Interaction Stability**: Implemented handler caching in the Renderer to prevent losing click/drag functionality during complex battle re-renders.
+*   **[POLISH] Nomenclature**: Renamed "AVAILABLE STRAINS" to **CELL CHAMBER** in the cell pool menu.
+*   **[FIX] Marked Status Overhaul**: Replaced red glow with a small floating 'X' above the Cell's head. Restricted x2 damage to direct monster attacks only and implemented automatic turn-based expiration.
+*   **[UPDATE] Action Card Purple Rebrand**: Rethemed all Action Cards (Ethanol, Penicillin) to a unified purple aesthetic. Added --neon-purple to global styles and updated card components (borders, glows, info panel) for a cohesive look.
+*   **[UPDATE] Info Panel Logic**: Refined the Action Card info panel to replace 'Pellicles: N/A' with 'Type: [Card Type]'. Implemented dynamic label switching between 'PELLICLES:' and 'TYPE:' depending on the inspected unit.
+*   **[UPDATE] Info Panel Aesthetics**: Implemented contextual title coloring in the info panel. Action Cards now display pink titles, Cells display green titles, and general battle/token info displays white titles. Added --neon-pink to global styles.
+*   **[UPDATE] Info Panel Category Accents**: Synced the colors of the left borders ('Accent Borders') of the ability boxes in the info panel to match the context-specific color rules (Pink for cards, Green for Cells, White for info).
+*   **[UPDATE] Info Panel Data Sync**: Synced the colors of Pellicle counts and Type values to match the title color rules (Pink for cards, Green for Cells, White for general info).
+*   **[UPDATE] Info Panel Glow Synchronization**: Implemented dynamic glow effects for the right sidebar, preview container, and unit shadows. Lighting and gradients now shift between Pink, Green, and White to match the context-specific color rules.

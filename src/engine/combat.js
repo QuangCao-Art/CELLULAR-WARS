@@ -40,8 +40,30 @@ export function resolveHit(victim, victimIndex, team, attacker = null, attackerI
     }
 
     if (victim.pellicle > 0) {
-        victim.pellicle -= 1;
+        // Critical Hit Logic (Marked)
+        let damage = 1;
+        const isDirectHit = attacker !== null && (hitType === 'heavy' || hitType === 'light');
+        if (victim.isMarked && isDirectHit) {
+            damage = 2;
+            victim.isMarked = false; // Consume mark
+            Renderer.showGameMessage("CRITICAL HIT! (x2)", "red");
+            Renderer.triggerVisualEffect(victimIndex, (team === gameState.playerTeam), 'hit-flash'); // Extra flash
+        }
+
+        if (victim.pellicle >= damage) {
+            victim.pellicle -= damage;
+        } else {
+            // Damage exceeds pellicle -> Death
+            handleMonsterDeath(victim, victimIndex, team, isVictimPlayer);
+            Animations.triggerDeathVisual(team, victimIndex, isVictimPlayer, () => {
+                Renderer.showGameMessage(`${victim.name} is OUT!`, "gray");
+                checkGameOver();
+                if (onComplete) onComplete();
+            });
+            return;
+        }
     } else {
+        // Already at 0 Pellicle -> Death
         handleMonsterDeath(victim, victimIndex, team, isVictimPlayer);
         // Trigger Death Animation before showing message and ending
         Animations.triggerDeathVisual(team, victimIndex, isVictimPlayer, () => {
@@ -186,3 +208,67 @@ export function resetReflectFlags() {
     gameState.playerTeam.forEach(m => m.hasReflectedThisAction = false);
     gameState.enemyTeam.forEach(m => m.hasReflectedThisAction = false);
 }
+
+export function applyCardEffect(cardId, targetIndex) {
+    const enemyTeam = gameState.enemyTeam;
+
+    if (cardId === 'card_ethanol') {
+        // Ethanol: -1 P to ALL enemies
+        let hitCount = 0;
+        enemyTeam.forEach((monster, idx) => {
+            if (monster && !monster.isDead && idx < 3) {
+                hitCount++;
+                Renderer.updateBattleLog(`ETHANOL burns ${monster.name}!`);
+                Renderer.triggerVisualEffect(idx, false, 'hit-flash'); // false = enemy
+
+                // Apply Logic
+                if (monster.pellicle > 0) {
+                    monster.pellicle -= 1;
+                } else {
+                    // Direct Necrosis
+                    handleMonsterDeath(monster, idx, enemyTeam, false);
+                    Animations.triggerDeathVisual(enemyTeam, idx, false, () => {
+                        Renderer.showGameMessage(`${monster.name} melted!`, "gray");
+                        checkGameOver();
+                    });
+                }
+            }
+        });
+
+        if (hitCount > 0) {
+            Animations.triggerScreenShake();
+            setTimeout(() => {
+                Renderer.renderEnemyFormation();
+                checkGameOver();
+            }, 600);
+            return true;
+        }
+        return false; // No targets?
+
+    } else if (cardId === 'card_penicillin') {
+        // Penicillin: Mark Target
+        const monster = enemyTeam[targetIndex];
+        if (!monster || monster.isDead || targetIndex >= 3) {
+            Renderer.showGameMessage("Invalid Target!", "red");
+            return false;
+        }
+
+        monster.isMarked = true;
+        Renderer.showGameMessage(`${monster.name} MARKED!`, "red");
+        Renderer.updateBattleLog(`${monster.name} is MARKED for x2 Damage!`);
+
+        // Add visual indicator class to slot
+        const slot = Renderer.getSlotElement(targetIndex, false);
+        if (slot) {
+            const monsterDiv = slot.querySelector('.monster');
+            if (monsterDiv) monsterDiv.classList.add('marked');
+        }
+
+        // Trigger generic effect
+        Renderer.triggerVisualEffect(targetIndex, false, 'ability-activation');
+
+        return true;
+    }
+    return false;
+}
+

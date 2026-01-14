@@ -15,7 +15,10 @@ export const gameState = {
     specialUsedThisTurn: false,
     attackUsedThisTurn: false,
     savedSquadConfig: ['cell03', 'cell02', 'cell01'],
-    enemyDifficulty: 'EASY'
+    enemyDifficulty: 'EASY',
+    playerHand: [],
+    cardsUnlocked: false,
+    selectedCards: ['card_ethanol', 'card_penicillin']
 };
 
 export const AI_PRESETS = {
@@ -76,6 +79,8 @@ export function resetGameState() {
     gameState.isAITurn = false;
     gameState.currentPhase = 'REINFORCE';
     gameState.lastAnnouncedPhase = '';
+    gameState.playerHand = [];
+    gameState.cardsUnlocked = false;
 
     gameState.playerTeam = gameState.savedSquadConfig.map(id => createMonsterInstance(id, true));
 

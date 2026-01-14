@@ -1,4 +1,5 @@
 import { MONSTER_DATABASE } from './data/monsters.js';
+import { CARDS_DATABASE } from './data/cards.js';
 import { gameState, CONSTANTS, createMonsterInstance, resetGameState, getReinforceAmount, AI_PRESETS } from './engine/state.js';
 import * as Renderer from './ui/renderer.js';
 import * as Animations from './ui/animations.js';
@@ -26,7 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
         rulebookScreen: document.getElementById('rulebook-screen'),
         databaseScreen: document.getElementById('database-screen'),
         settingsScreen: document.getElementById('settings-screen'),
-        enemyLoadoutScreen: document.getElementById('enemy-loadout-screen')
+        enemyLoadoutScreen: document.getElementById('enemy-loadout-screen'),
+        heroCardZone: document.getElementById('card-zone')
     };
     Renderer.initializeSelectors(refs);
 
@@ -76,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 3. Initialize Global Systems
     initCellContainer();
+    Renderer.setHandlersCache(getHandlers());
 });
 
 // --- CORE GAME FLOW ---
@@ -86,6 +89,12 @@ function startGame() {
     document.getElementById('game-over-overlay').classList.add('hidden'); // Reset overlay
 
     resetGameState();
+
+    // Init Hand (Locked)
+    // Init Hand (Locked) - Use Selected Cards
+    gameState.playerHand = [...gameState.selectedCards];
+    Renderer.renderHand(getHandlers());
+
     Renderer.renderFormation(getHandlers());
     Renderer.renderEnemyFormation(getHandlers());
     Renderer.updateInfoPanel(); // Initialize Battle Overview
@@ -147,8 +156,8 @@ function startTurn() {
     gameState.actionTaken = false;
     gameState.specialUsedThisTurn = false;
     gameState.attackUsedThisTurn = false;
-    gameState.playerTeam.forEach(m => { m.attackCount = 0; });
-    gameState.enemyTeam.forEach(m => { m.attackCount = 0; });
+    gameState.playerTeam.forEach(m => { m.attackCount = 0; m.isMarked = false; });
+    gameState.enemyTeam.forEach(m => { m.attackCount = 0; m.isMarked = false; });
 
     if (gameState.isAITurn) {
         AI.runAIReinforce(() => {
@@ -166,9 +175,18 @@ function startTurn() {
         gameState.currentPhase = 'REINFORCE';
         gameState.pelliclePool = getReinforceAmount(false);
 
+        // Unlock Cards on Turn 3
+        if (gameState.turnNumber >= 3 && !gameState.cardsUnlocked) {
+            gameState.cardsUnlocked = true;
+            Renderer.showGameMessage("CHEMICAL WEAPONS UNLOCKED", "blue");
+        }
+
         // Restore handlers/listeners that might have been lost during AI rendering
         Renderer.renderFormation(getHandlers());
         Renderer.renderEnemyFormation(getHandlers());
+
+        // Render Hand (Locked/Unlocked handled by renderer based on state)
+        Renderer.renderHand(getHandlers());
 
         spawnPellicleTokens();
         Renderer.updatePhaseUI();
@@ -387,6 +405,32 @@ function handleDropPlayerSlot(targetIndex, rawData) {
 }
 
 function handleDropEnemySlot(enemyIndex, rawData) {
+    if (rawData.includes('type:card')) {
+        const cardId = rawData.split('id:')[1];
+
+        if (gameState.currentPhase !== 'ACTION') {
+            Renderer.showGameMessage("Chemical Weapons require Action Phase!", "red");
+            return;
+        }
+
+        if (!gameState.cardsUnlocked) {
+            Renderer.showGameMessage("Weapons not authorized yet!", "red");
+            return;
+        }
+
+        const success = Combat.applyCardEffect(cardId, enemyIndex);
+
+        if (success) {
+            // Remove from hand
+            const cardIdx = gameState.playerHand.indexOf(cardId);
+            if (cardIdx > -1) {
+                gameState.playerHand.splice(cardIdx, 1);
+            }
+            Renderer.renderHand(getHandlers());
+        }
+        return;
+    }
+
     if (gameState.currentPhase === 'REINFORCE') {
         const tokenId = rawData.split('id:')[1];
         addPellicleToEnemyFromDrag(enemyIndex, tokenId);
@@ -593,8 +637,10 @@ window.setupTestScenario = () => {
     console.log("SETTING UP TEST SCENARIO");
     gameState.playerTeam[1].pellicle = 5;
     gameState.enemyTeam.forEach(m => m.damage = 0);
+    gameState.cardsUnlocked = true;
     Renderer.renderFormation(getHandlers());
     Renderer.renderEnemyFormation(getHandlers());
+    Renderer.renderHand(getHandlers());
     Renderer.updatePhaseUI();
 };
 
@@ -726,17 +772,28 @@ function initCellContainer() {
     const btnSave = document.getElementById('btn-loadout-save');
     if (btnSave) btnSave.onclick = showMainMenu;
 
+    // --- NEW: CARD LOADOUT LOGIC ---
+    renderCardLoadout();
+
     // --- NEW: HOVER TOOLTIP & CLICK MODAL LOGIC ---
     const tooltip = document.getElementById('loadout-tooltip');
     const modal = document.getElementById('loadout-modal');
 
     const showTooltip = (e, dbId) => {
         const monster = MONSTER_DATABASE[dbId];
-        if (!monster || !tooltip) return;
+        const card = CARDS_DATABASE[dbId];
 
-        document.getElementById('lt-name').innerText = monster.name;
-        document.getElementById('lt-offensive').innerText = monster.offensiveTrail;
-        document.getElementById('lt-pellicle').innerText = monster.pellicleTrail;
+        if ((!monster && !card) || !tooltip) return;
+
+        if (monster) {
+            document.getElementById('lt-name').innerText = monster.name;
+            document.getElementById('lt-offensive').innerText = monster.offensiveTrail;
+            document.getElementById('lt-pellicle').innerText = monster.pellicleTrail;
+        } else if (card) {
+            document.getElementById('lt-name').innerText = card.name;
+            document.getElementById('lt-offensive').innerText = card.offensiveTrail;
+            document.getElementById('lt-pellicle').innerText = card.pellicleTrail;
+        }
 
         tooltip.classList.remove('hidden');
         tooltip.style.left = (e.clientX + 15) + 'px';
@@ -747,25 +804,48 @@ function initCellContainer() {
 
     const openModal = (dbId) => {
         const monster = MONSTER_DATABASE[dbId];
-        if (!monster || !modal) return;
+        const card = CARDS_DATABASE[dbId];
 
-        document.getElementById('lm-img').src = `Images/${monster.name.replace(/\s+/g, '')}.png`;
-        document.getElementById('lm-title').innerText = monster.name.toUpperCase();
-        document.getElementById('lm-attack').innerText = monster.offensiveTrail;
-        document.getElementById('lm-passive').innerText = monster.pellicleTrail;
+        if ((!monster && !card) || !modal) return;
 
-        // Add info bio if available
+        const imgEl = document.getElementById('lm-img');
+        const titleEl = document.getElementById('lm-title');
+        const attackEl = document.getElementById('lm-attack');
+        const passiveEl = document.getElementById('lm-passive');
+
+        // Ensure bio element exists
         let bioEl = document.getElementById('lm-bio');
         if (!bioEl) {
             bioEl = document.createElement('p');
             bioEl.id = 'lm-bio';
-            bioEl.style.fontSize = '1.0rem';
-            bioEl.style.color = 'rgba(255,255,255,0.6)';
-            bioEl.style.marginTop = '20px';
+            bioEl.style.fontSize = '0.9rem';
+            bioEl.style.color = 'rgba(255,255,255,0.7)';
+            bioEl.style.marginTop = '15px';
             bioEl.style.fontStyle = 'italic';
+            bioEl.style.lineHeight = '1.4';
             document.querySelector('.modal-body').appendChild(bioEl);
         }
-        bioEl.innerText = monster.info || "";
+
+        const label1 = document.getElementById('lm-attack-label');
+        const label2 = document.getElementById('lm-passive-label');
+
+        if (monster) {
+            imgEl.src = `Images/${monster.name.replace(/\s+/g, '')}.png`;
+            titleEl.innerText = monster.name.toUpperCase();
+            if (label1) label1.innerText = "OFFENSIVE TRAIL";
+            if (label2) label2.innerText = "PELLICLE TRAIL";
+            attackEl.innerText = monster.offensiveTrail;
+            passiveEl.innerText = monster.pellicleTrail;
+            bioEl.innerText = monster.info || "";
+        } else if (card) {
+            imgEl.src = card.icon;
+            titleEl.innerText = card.name.toUpperCase();
+            if (label1) label1.innerText = "CARD EFFECT";
+            if (label2) label2.innerText = "SPECIAL SPECS";
+            attackEl.innerText = card.offensiveTrail;
+            passiveEl.innerText = card.pellicleTrail;
+            bioEl.innerText = card.info || "";
+        }
 
         modal.classList.remove('hidden');
         hideTooltip();
@@ -774,27 +854,35 @@ function initCellContainer() {
     const closeModal = () => modal?.classList.add('hidden');
 
     // UI Listeners for Pool and Squad
-    const cards = document.querySelectorAll('.pool-item, .loadout-slot');
-    cards.forEach(card => {
-        card.addEventListener('mouseenter', (e) => {
-            const dbId = card.dataset.id;
-            if (dbId) showTooltip(e, dbId.replace('e_', ''));
+    // Important: Re-query because cards might be re-rendered
+    const attachListeners = () => {
+        const cards = document.querySelectorAll('.pool-item, .loadout-slot, .card-slot');
+        cards.forEach(card => {
+            // Avoid double binding (simple check, or just overwrite onclick)
+            card.onmouseenter = (e) => {
+                const dbId = card.dataset.id;
+                if (dbId) showTooltip(e, dbId.replace('e_', ''));
+            };
+            card.onmousemove = (e) => {
+                if (!tooltip.classList.contains('hidden')) {
+                    tooltip.style.left = (e.clientX + 15) + 'px';
+                    tooltip.style.top = (e.clientY + 15) + 'px';
+                }
+            };
+            card.onmouseleave = hideTooltip;
+            card.onclick = (e) => {
+                const dbId = card.dataset.id;
+                if (dbId) openModal(dbId.replace('e_', ''));
+            };
         });
+    };
 
-        card.addEventListener('mousemove', (e) => {
-            if (!tooltip.classList.contains('hidden')) {
-                tooltip.style.left = (e.clientX + 15) + 'px';
-                tooltip.style.top = (e.clientY + 15) + 'px';
-            }
-        });
+    // Initial Attach
+    // Initial Attach
+    attachListeners();
 
-        card.addEventListener('mouseleave', hideTooltip);
-
-        card.addEventListener('click', (e) => {
-            const dbId = card.dataset.id;
-            if (dbId) openModal(dbId.replace('e_', ''));
-        });
-    });
+    // EXPOSE for usage in renderCardLoadout
+    window.attachLoadoutListeners = attachListeners;
 
     // Modal Close Logic
     const closeBtn = document.querySelector('.modal-close');
@@ -874,4 +962,73 @@ function handleOsmoticFlow(index) {
         Renderer.renderFormation(getHandlers());
         Renderer.updatePhaseUI();
     }
+}
+
+// --- CARD LOADOUT HANDLERS ---
+function renderCardLoadout() {
+    // 1. Render Card Pool
+    const poolGrid = document.getElementById('card-pool-grid');
+    if (poolGrid) {
+        poolGrid.innerHTML = '';
+        Object.values(CARDS_DATABASE).forEach(card => {
+            const item = document.createElement('div');
+            item.className = 'pool-item'; // Reuse styling
+            item.draggable = true;
+            item.dataset.id = card.id;
+            item.ondragstart = (e) => {
+                e.dataTransfer.setData('text/plain', `type:card-pool;id:${card.id}`);
+                item.style.opacity = '0.5';
+            };
+            item.ondragend = (e) => {
+                item.style.opacity = '1';
+            };
+            // Use card icon
+            item.innerHTML = `<img src="${card.icon}" style="width:40px;height:40px;"><span>${card.name}</span>`;
+            poolGrid.appendChild(item);
+        });
+    }
+
+    // 2. Render Card Slots
+    const cardSlots = document.querySelectorAll('.card-slot');
+    cardSlots.forEach(slot => {
+        const index = parseInt(slot.dataset.slot);
+
+        slot.ondragover = (e) => e.preventDefault();
+        slot.ondrop = (e) => handleCardSquadDrop(e, index);
+
+        const content = slot.querySelector('.slot-content');
+        const cardId = gameState.selectedCards[index];
+
+        if (cardId && content) {
+            const card = CARDS_DATABASE[cardId];
+            if (card) {
+                slot.dataset.id = cardId; // FIX: Set ID for interaction
+                slot.classList.add('has-monster'); // Reuse for border effect
+                content.innerHTML = `<img src="${card.icon}" style="width:60px;">`;
+            }
+        } else if (content) {
+            content.innerHTML = '';
+            slot.dataset.id = ''; // Clear ID
+            slot.classList.remove('has-monster');
+        }
+    });
+
+    // Re-attach listeners to new elements
+    if (window.attachLoadoutListeners) window.attachLoadoutListeners();
+}
+
+function handleCardSquadDrop(e, slotIndex) {
+    e.preventDefault();
+    const rawData = e.dataTransfer.getData('text/plain');
+    if (!rawData.includes('type:card-pool')) return;
+
+    const cardId = rawData.split('id:')[1];
+    if (!cardId) return;
+
+    // Enforce Max 2 distinct cards logic (if we wanted distinct) 
+    // BUT user said "max 2 card of the same kind", which is effectively implied by 2 slots total.
+    // So we just replace the slot.
+
+    gameState.selectedCards[slotIndex] = cardId;
+    renderCardLoadout(); // Refresh UI
 }
